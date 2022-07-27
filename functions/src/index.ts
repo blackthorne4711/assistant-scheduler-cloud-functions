@@ -25,8 +25,6 @@ const authenticate = async (
     req: express.Request,
     res: express.Response,
     next: express.NextFunction) => {
-// functions.logger.log("GET authenticate init");
-
   if (!req.headers.authorization ||
       !req.headers.authorization.startsWith("Bearer ")) {
     functions.logger.warn("authenticate - req.headers.authorization");
@@ -49,14 +47,47 @@ const authenticate = async (
 };
 app.use(authenticate);
 
-// GET /api/profile
+// ****************
+// Helper functions
+// ****************
+function getUserid(req: express.Request) {
+  const reqCust = req as RequestCustom;
+  return reqCust.decodedIdToken.email as string;
+};
+
+// function getUserRoles(userid: string) {
+//   try {
+//     const doc: FirebaseFirestore.DocumentData =
+//       await db.collection("profiles").doc(userid).get();
+
+//     if (doc.exists) {
+//       const resAdmin: boolean = doc.data().admin;
+//       return resAdmin;
+//     }
+//   } catch (error) {
+//     functions.logger.error(error);
+//     return false;
+//   }
+
+//   return false;
+// };
+
+// function getUserAssistants(req: express.Request) {
+//   const reqCust = req as RequestCustom;
+//   return reqCust.decodedIdToken.email as string;
+// };
+
+// ****************
+// ROUTES
+// ****************
+
+// GET /profile
 // Get profile for current user
 app.get("/profile/", async (req, res) => {
   let userid: string;
 
   try {
-    const reqCust = req as RequestCustom;
-    userid = reqCust.decodedIdToken.email as string;
+    userid = getUserid(req);
     functions.logger.log("GET /profile for current user" + userid);
   } catch (error) {
     functions.logger.error(
@@ -134,6 +165,70 @@ app.get("/profiles", async (req, res) => {
     // return res.status(200).send(JSON.stringify(resProfiles));
   } catch (error) {
     console.log(error);
+    return res.sendStatus(500);
+  }
+});
+
+// POST /profile
+// Create profile for specified user (USER: current, ADMIN: any)
+app.post("/profile", async (req, res) => {
+  let userid: string;
+
+  try {
+    const resProfiles: Array<{
+      id: string,
+      email: string,
+      firstname: string,
+      lastname: string
+    }>= [];
+
+    userid = getUserid(req);
+
+    const docId: string = req.body.email; // Set email as id
+    const docEmail: string = req.body.email;
+    const docFirstName: string = req.body.firstname;
+    const docLastName: string = req.body.lastname;
+
+    if (userid == docId) {
+      // Allowed for all authenticated users
+      functions.logger.log("POST /profile for current user - " + userid);
+    } else {
+      // Check if Admin
+      let isAdmin: boolean = false;
+      const docRoles: FirebaseFirestore.DocumentData =
+        await db.collection("roles").doc(userid).get();
+      
+      if (docRoles.exists) {
+        isAdmin = docRoles.data().admin;
+      }
+
+      if (isAdmin) {
+        functions.logger.log("POST /profile for other user - " + userid + " by " + docId);
+      } else {
+        return res.status(403).json("Not allowed for non-admin, if not current user");
+      }
+    }
+
+    // Set Profile (overwrite if exists)
+    await db.collection("profiles").doc(docId).set({
+      email: docEmail,
+      firstName: docFirstName,
+      lastName: docLastName
+    });
+
+    resProfiles.push({
+        "id": docId,
+        "email": docEmail,
+        "firstname": docFirstName,
+        "lastname": docLastName,
+      });
+
+    return res.status(200).json(resProfiles);
+  } catch (error) {
+    functions.logger.error(
+        "ERROR - POST /profile",
+        (error as Error).message
+    );
     return res.sendStatus(500);
   }
 });
