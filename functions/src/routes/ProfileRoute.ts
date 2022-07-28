@@ -1,13 +1,9 @@
 import * as functions from "firebase-functions";
 import {Router} from "express";
 import {getUserid} from "../utils/useAuth"
-import * as admin from "firebase-admin";
+import {profilesCol, rolesCol} from '../utils/useDb'
 
 const profileRoute = Router();
-
-admin.initializeApp();
-
-const db = admin.firestore();
 
 // GET /profile
 // Get profile for current user
@@ -16,10 +12,10 @@ profileRoute.get("/profile", async (req, res) => {
 
   try {
     userid = getUserid(req);
-    functions.logger.log("GET /profile for current user" + userid);
+    functions.logger.log("GET /profile for current user", userid);
   } catch (error) {
     functions.logger.error(
-        "ERROR - GET /profile",
+        "GET /profile",
         (error as Error).message
     );
     return res.sendStatus(500);
@@ -33,7 +29,7 @@ profileRoute.get("/profile", async (req, res) => {
       lastname: string
     }>= [];
     const doc: FirebaseFirestore.DocumentData =
-      await db.collection("profiles").doc(userid).get();
+      await profilesCol.doc(userid).get();
 
     if (doc.exists) {
       // console.log(doc.data());
@@ -51,11 +47,11 @@ profileRoute.get("/profile", async (req, res) => {
 
       return res.status(200).json(resProfiles);
     } else {
-      console.log("Profile not found - " + userid);
+      functions.logger.log("Profile not found", userid);
       return res.status(200).json("{}");
     }
   } catch (error) {
-    console.log(error);
+    functions.logger.error(error);
     return res.sendStatus(500);
   }
 });
@@ -70,7 +66,7 @@ profileRoute.get("/profiles", async (req, res) => {
       firstname: string,
       lastname: string
     }>= [];
-    const profilesSnap = await db.collection("profiles").orderBy("email").get();
+    const profilesSnap = await profilesCol.orderBy("email").get();
 
     profilesSnap.forEach((doc: FirebaseFirestore.DocumentData) => {
       const resId: string = doc.id;
@@ -124,7 +120,7 @@ profileRoute.post("/profile", async (req, res) => {
       // Check if Admin
       let isAdmin: boolean = false;
       const docRoles: FirebaseFirestore.DocumentData =
-        await db.collection("roles").doc(userid).get();
+        await rolesCol.doc(userid).get();
       
       if (docRoles.exists) {
         isAdmin = docRoles.data().admin;
@@ -138,7 +134,7 @@ profileRoute.post("/profile", async (req, res) => {
     }
 
     // Set Profile (overwrite if exists)
-    await db.collection("profiles").doc(docId).set({
+    await profilesCol.doc(docId).set({
       email: docEmail,
       firstName: docFirstName,
       lastName: docLastName

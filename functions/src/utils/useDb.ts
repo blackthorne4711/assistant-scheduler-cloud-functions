@@ -1,20 +1,22 @@
 // Get the imports
 import * as admin from "firebase-admin";
-//import { initializeApp } from '@firebase/app'
-import { getFirestore, CollectionReference, collection, DocumentData } from '@firebase/firestore'
+//import * as app from "@firebase/app"
+//import { getFirestore, CollectionReference, collection, DocumentData } from '@firebase/firestore'
+//import { CollectionReference, DocumentData } from '@firebase/firestore'
 
 
 // Init the firebase app
-//export const firebaseApp = initializeApp()
-export const firebaseApp = admin.initializeApp();
+//export const firebaseApp = app.initializeApp()
+export const app = admin.initializeApp();
 
 // Export firestore incase we need to access it directly
-export const firestore = getFirestore()
-//export const firestore = admin.firestore();
+//export const firestore = getFirestore(firebaseApp)
+export const db = admin.firestore();
 
 // This is just a helper to add the type to the db responses
-const createCollection = <T = DocumentData>(collectionName: string) => {
-  return collection(firestore, collectionName) as CollectionReference<T>
+const createCollection =
+  <T = FirebaseFirestore.DocumentData>(collectionName: string) => {
+  return db.collection(collectionName) as FirebaseFirestore.CollectionReference<T>;
 }
 
 // Import all your model types
