@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
-//import {DecodedIdToken} from "firebase-admin/auth";
 import * as admin from "firebase-admin";
 import * as express from "express";
+import {rolesCol} from '../utils/useDb'
 
 // Extending Express Request
 export interface RequestCustom extends express.Request
@@ -14,6 +14,21 @@ export function getUserid(req: express.Request) {
   const reqCust = req as RequestCustom;
   return reqCust.decodedIdToken.email as string;
 };
+
+export async function isUseridAdmin(userid: string) {
+  let isAdmin: boolean = false;
+
+  const singleRoleDocRef = rolesCol.doc(userid);
+  const singleRoleDoc = await singleRoleDocRef.get();
+  const singleRole = singleRoleDoc.data();
+
+  if (singleRole) {
+    console.log(singleRole.admin)
+    isAdmin = singleRole.admin;
+  }
+
+  return isAdmin;
+}
 
 // Express authentication middleware
 export const authenticate = async (

@@ -1,7 +1,7 @@
 import * as functions from "firebase-functions";
 import {Router} from "express";
-import {getUserid} from "../utils/useAuth"
-import {profilesCol, rolesCol} from '../utils/useDb'
+import {getUserid, isUseridAdmin} from "../utils/useAuth"
+import {profilesCol} from '../utils/useDb'
 
 const profileRoute = Router();
 
@@ -117,16 +117,9 @@ profileRoute.post("/profile", async (req, res) => {
       // Allowed for all authenticated users
       functions.logger.log("POST /profile for current user - " + userid);
     } else {
-      // Check if Admin
-      let isAdmin: boolean = false;
-      const docRoles: FirebaseFirestore.DocumentData =
-        await rolesCol.doc(userid).get();
-      
-      if (docRoles.exists) {
-        isAdmin = docRoles.data().admin;
-      }
-
+      const isAdmin: boolean = await isUseridAdmin(userid);
       if (isAdmin) {
+        // Allowed for Admin
         functions.logger.log("POST /profile for other user - " + userid + " by " + docId);
       } else {
         return res.status(403).json("Not allowed for non-admin, if not current user");

@@ -1,33 +1,86 @@
 import {Router} from "express";
-import {rolesCol} from '../utils/useDb'
-import {getUserid} from "../utils/useAuth"
-//import {Assistant} from "../types/Assistant"
+import {getUserid, isUseridAdmin} from "../utils/useAuth"
+import {assistantsCol} from '../utils/useDb'
+import {Assistant} from "../types/Assistant"
 
 const assistantRoute = Router();
 
-async function isUseridAdmin(userid: string) {
-  let isAdmin: boolean = false;
+assistantRoute.get("/assistant/:assistantid", async (req, res) => {
+  // TODO - error handling in getUserid
+  //const userid = getUserid(req);
 
-  const singleRoleDocRef = rolesCol.doc(userid);
-  const singleRoleDoc = await singleRoleDocRef.get();
-  const singleRole = singleRoleDoc.data();
+  const docId: string = req.params.assistantid
+  let docFirstName: string = '';
+  let docLastName: string = '';
+  let docType: string = '';
 
-  if (singleRole) {
-    console.log(singleRole.admin)
-    isAdmin = singleRole.admin;
+  const docRes: FirebaseFirestore.DocumentData =
+    await assistantsCol.doc(docId).get();
+  if (docRes.exists) {
+    docFirstName = docRes.data().firstname;
+    docLastName = docRes.data().lastname;
+    docType = docRes.data().type;
   }
 
-  return isAdmin;
-}
+  // TODO - Maybe add handling if no doc found?
 
-assistantRoute.get("/assistant/:assistantid", async (req, res) => {
+  return res.status(200).json({
+    id: docId,
+    firstname: docFirstName,
+    lastname: docLastName,
+    type: docType
+  });
+});
+
+assistantRoute.get("/assistants", async (req, res) => {
+  const resAssistants: Array<Assistant>  = [];
+
+  const docRes: FirebaseFirestore.DocumentData =
+    await assistantsCol.orderBy("lastname").orderBy("firstname").get();
+
+  docRes.forEach((doc: FirebaseFirestore.DocumentData) => {
+    resAssistants.push({ id: doc.id, ...doc.data() });
+  });
+  
+  return res.status(200).json(resAssistants);
+});
+
+assistantRoute.post("/assistant", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
-  // Check if admin or role-userForAssistant
-  isUseridAdmin(userid)
+  if(!req.body.firstname ||
+     !req.body.lastname ||
+     !req.body.type)
+  {
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., type: ... }");
+  }
 
-  return res.status(200).json("{}");
+  let docId: string = '' // Set from res.id
+  const docFirstName: string = req.body.firstname;
+  const docLastName: string = req.body.lastname;
+  const docType: string = req.body.type;
+
+  // TODO - Check that type is valid
+
+  if(await isUseridAdmin(userid)) {
+    const docRes = await assistantsCol.add({
+      firstname: docFirstName,
+      lastname: docLastName,
+      type: docType
+    });
+    docId = docRes.id;
+  } else {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  return res.status(200).json({
+    id: docId,
+    firstname: docFirstName,
+    lastname: docLastName,
+    type: docType
+  });
 });
+
 
 export {assistantRoute};
