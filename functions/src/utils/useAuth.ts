@@ -30,6 +30,25 @@ export async function isUseridAdmin(userid: string) {
   return isAdmin;
 }
 
+export async function isUserForAssistant(userid: string, assistant: string) {
+  let isUserForAssistant: boolean = false;
+
+  const singleRoleDoc = await rolesCol.doc(userid).get();
+  const singleRole = singleRoleDoc.data();
+
+  if (singleRole) {
+    const userForAssistants = singleRole.userForAssistants;
+
+    userForAssistants.forEach((userForAssistant: string) => {
+      if (assistant == userForAssistant) {
+        isUserForAssistant = true;
+      }
+    });
+  }
+
+  return isUserForAssistant;
+}
+
 // Express authentication middleware
 export const authenticate = async (
     req: express.Request,
