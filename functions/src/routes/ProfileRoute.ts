@@ -7,10 +7,47 @@ import {Profile} from "../types/Profile"
 const profileRoute = Router();
 
 // GET /profile
-// Get profile for current user
+// Get profile for current user  + role
 profileRoute.get("/profile", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
+
+  const docId: string = userid
+  let docEmail: string = '';
+  let docFirstName: string = '';
+  let docLastName: string = '';
+  let docRole: string = '';
+
+  const docRes: FirebaseFirestore.DocumentData =
+    await profilesCol.doc(userid).get();
+  if (docRes.exists) {
+    docEmail = docRes.data().email;
+    docFirstName = docRes.data().firstName;
+    docLastName = docRes.data().lastName;
+    docRole = 'USER';
+
+    if (await isUseridAdmin(userid)) {
+      docRole = 'ADMIN';
+    }
+  }
+
+  // TODO - Maybe add handling if no doc found?
+
+  res.header("Access-Control-Allow-Origin", "*");
+
+  return res.status(200).json({
+    id: docId,
+    email: docEmail,
+    firstname: docFirstName,
+    lastname: docLastName,
+    role: docRole,
+  });
+});
+
+// Get profile for current user
+profileRoute.get("/profile/:userid", async (req, res) => {
+  // TODO - error handling in getUserid
+  const userid = req.params.userid;
 
   const docId: string = userid
   let docEmail: string = '';

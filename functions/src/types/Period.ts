@@ -1,7 +1,7 @@
 export interface PeriodData {
   name: string,
-  from: number,
-  to: number,
+  from: string, // YYYY-MM-DD
+  to: string,   // YYYY-MM-DD
   status: string, // I.e. only allow bookings on timeslot in active period
   description?: string, // Free text field
 }
@@ -14,6 +14,6 @@ export enum PeriodStatus {
   PREPARE = 'PREPARE',
   OPEN = 'OPEN',
   CLOSED = 'CLOSED',
-  ARCHIVED = 'ARCHIED',
+  ARCHIVED = 'ARCHIVED',
   UNDEFINED = '',
 }
