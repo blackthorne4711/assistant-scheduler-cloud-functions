@@ -6,8 +6,9 @@ import {Profile} from "../types/Profile"
 
 const profileRoute = Router();
 
-// GET /profile
-// Get profile for current user  + role
+// -------------------------------------------------------------
+// GET (current) PROFILE - get profile and role for current user
+// -------------------------------------------------------------
 profileRoute.get("/profile", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
@@ -44,7 +45,9 @@ profileRoute.get("/profile", async (req, res) => {
   });
 });
 
-// Get profile for current user
+// ---------------------------------------------
+// GET PROFILE - get profile and role for userid
+// ---------------------------------------------
 profileRoute.get("/profile/:userid", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = req.params.userid;
@@ -72,13 +75,19 @@ profileRoute.get("/profile/:userid", async (req, res) => {
   });
 });
 
-// GET /profiles
-// Get all profiles
+// -------------------------------
+// GET PROFILES - get all profiles
+// -------------------------------
 profileRoute.get("/profiles", async (req, res) => {
   const resProfiles: Array<Profile>  = [];
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
 
   const docRes = await profilesCol.orderBy("email").get();
-
   docRes.forEach((doc: FirebaseFirestore.DocumentData) => {
     resProfiles.push({ id: doc.id, ...doc.data() });
   });
@@ -86,8 +95,9 @@ profileRoute.get("/profiles", async (req, res) => {
   return res.status(200).json(resProfiles);
 });
 
-// POST /profile
-// Create profile for specified user (USER: current, ADMIN: any)
+// ---------------------------------------------------------
+// POST PROFILE - create profile (USER: current, ADMIN: any)
+// ---------------------------------------------------------
 profileRoute.post("/profile", async (req, res) => {
   const userid = getUserid(req);
 

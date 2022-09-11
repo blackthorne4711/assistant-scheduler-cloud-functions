@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as express from "express";
 import {rolesCol} from '../utils/useDb'
+import {AuthUser} from "../types/AuthUser"
 
 // Extending Express Request
 export interface RequestCustom extends express.Request
@@ -23,7 +24,6 @@ export async function isUseridAdmin(userid: string) {
   const singleRole = singleRoleDoc.data();
 
   if (singleRole) {
-    console.log(singleRole.admin)
     isAdmin = singleRole.admin;
   }
 
@@ -48,6 +48,93 @@ export async function isUserForAssistant(userid: string, assistant: string) {
 
   return isUserForAssistant;
 }
+
+// UserRecord {'
+// id: 'IQVP024QoEh4Y9imPKJ2bbeNId53',
+// email: 'erik@stallhjalpen.se',
+// emailVerified: false,
+// displayName: undefined,
+// photoURL: undefined,
+// phoneNumber: undefined,
+// disabled: false,
+// metadata: UserMetadata {
+//   creationTime: 'Sat, 10 Sep 2022 11:47:08 GMT',
+//   lastSignInTime: null,
+//   lastRefreshTime: null
+// },
+// providerData: [
+//   UserInfo {
+//     uid: 'erik@stallhjalpen.se',
+//     displayName: undefined,
+//     email: 'erik@stallhjalpen.se',
+//     photoURL: undefined,
+//     providerId: 'password',
+//     phoneNumber: undefined
+//   }
+// ],
+// passwordHash: 'RqQdBGRI6biBVebQ6u9nIEzEVfrCSRJinrZV5uZaWlx5YhQjoRBp88jEgy1n61wHYgrmQPasCdkl6qpxch5H-A==',
+// passwordSalt: 'Nxk1L8AujKUe7Q==',
+// tokensValidAfterTime: 'Sat, 10 Sep 2022 11:47:08 GMT',
+// tenantId: undefined
+
+export async function listAuthUsers(): Promise<AuthUser[]> {
+  return new Promise<AuthUser[]>((resolve, reject) => {
+    let authUserList: AuthUser[] = [];
+
+    admin.auth().listUsers(1000) // lists up to 1000 users
+    .then((listUsersResult) => {
+      for (let i = 0; i < listUsersResult.users.length; i++) {
+        const {uid, email, emailVerified, disabled } = listUsersResult.users[i];
+        authUserList.push({"uid": uid, "id": email!, "email": email!, "emailVerified": emailVerified!, "disabled": disabled! });
+      }
+
+      if (listUsersResult.pageToken) {
+        functions.logger.error("listAuthUsers() - OVER 1000 - " + listUsersResult.pageToken);
+      }
+
+      //console.log(authUserList);
+      resolve(authUserList);
+    })
+    .catch(function (error) {
+      functions.logger.error("listAuthUsers() - " + error.message);
+      reject(error);
+    });
+  });
+}
+
+// TODO - create user
+// getAuth()
+//   .createUser({
+//     uid: 'some-uid',
+//     email: 'user@example.com',
+//     phoneNumber: '+11234567890',
+//   })
+//   .then((userRecord) => {
+//     // See the UserRecord reference doc for the contents of userRecord.
+//     console.log('Successfully created new user:', userRecord.uid);
+//   })
+//   .catch((error) => {
+//     console.log('Error creating new user:', error);
+//   });
+
+// TODO - update user
+// getAuth()
+//   .updateUser(uid, {
+//     email: 'modifiedUser@example.com',
+//     phoneNumber: '+11234567890',
+//     emailVerified: true,
+//     password: 'newPassword',
+//     displayName: 'Jane Doe',
+//     photoURL: 'http://www.example.com/12345678/photo.png',
+//     disabled: true,
+//   })
+//   .then((userRecord) => {
+//     // See the UserRecord reference doc for the contents of userRecord.
+//     console.log('Successfully updated user', userRecord.toJSON());
+//   })
+//   .catch((error) => {
+//     console.log('Error updating user:', error);
+//   });
 
 // Express authentication middleware
 export const authenticate = async (

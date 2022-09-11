@@ -7,6 +7,9 @@ import {Period, PeriodData, PeriodStatus} from "../types/Period"
 
 const periodRoute = Router();
 
+// ----------
+// GET PERIOD
+// ----------
 periodRoute.get("/period/:periodid", async (req, res) => {
   const docId: string = req.params.periodid
 
@@ -19,6 +22,9 @@ periodRoute.get("/period/:periodid", async (req, res) => {
   return res.status(200).json({ });
 });
 
+// ---------------
+// GET ALL PERIODS
+// ---------------
 periodRoute.get("/periods", async (req, res) => {
   const resPeriods: Array<Period>  = [];
 
@@ -32,6 +38,9 @@ periodRoute.get("/periods", async (req, res) => {
   return res.status(200).json(resPeriods);
 });
 
+// -----------
+// POST PERIOD
+// -----------
 periodRoute.post("/period", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
@@ -102,6 +111,9 @@ periodRoute.post("/period", async (req, res) => {
   });
 });
 
+// ----------
+// PUT PERIOD
+// ----------
 periodRoute.put("/period/:periodid", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
@@ -170,6 +182,24 @@ periodRoute.put("/period/:periodid", async (req, res) => {
     id: docId,
     ...periodData
   });
+});
+
+// -------------
+// DELETE PERIOD
+// -------------
+periodRoute.delete("/period/:periodid", async (req, res) => {
+  const docId: string = req.params.periodid;
+
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  await periodsCol.doc(docId).delete();
+
+  return res.status(200).json({ });
 });
 
 export {periodRoute};
