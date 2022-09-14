@@ -13,7 +13,7 @@ alertRoute.get("/alerts", async (req, res) => {
   const resAlerts: Array<Alert>  = [];
 
   const alertDocs =
-    await alertsCol.orderBy("alertDate").get();
+    await alertsCol.orderBy("alertDate", "desc").get();
 
   alertDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resAlerts.push({ id: doc.id, ...doc.data() });

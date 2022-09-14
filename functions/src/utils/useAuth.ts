@@ -2,6 +2,7 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as express from "express";
 import {rolesCol} from '../utils/useDb'
+import {assistantsCol} from '../utils/useDb'
 import {AuthUser} from "../types/AuthUser"
 
 // Extending Express Request
@@ -32,12 +33,11 @@ export async function isUseridAdmin(userid: string) {
 
 export async function isUserForAssistant(userid: string, assistant: string) {
   let isUserForAssistant: boolean = false;
+  const roleDoc = await rolesCol.doc(userid).get();
+  const role = roleDoc.data();
 
-  const singleRoleDoc = await rolesCol.doc(userid).get();
-  const singleRole = singleRoleDoc.data();
-
-  if (singleRole) {
-    const userForAssistants = singleRole.userForAssistants;
+  if (role) {
+    const userForAssistants = role.userForAssistants;
 
     userForAssistants.forEach((userForAssistant: string) => {
       if (assistant == userForAssistant) {
@@ -47,6 +47,18 @@ export async function isUserForAssistant(userid: string, assistant: string) {
   }
 
   return isUserForAssistant;
+}
+
+export async function getAssistantType(assistantid:string) {
+  let assistantType: number = -1;
+  const assistantDoc = await assistantsCol.doc(assistantid).get();
+  const assistant = assistantDoc.data();
+
+  if (assistant) {
+    assistantType = assistant.type;
+  }
+
+  return assistantType;
 }
 
 // UserRecord {'

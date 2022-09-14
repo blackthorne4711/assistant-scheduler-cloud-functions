@@ -1,7 +1,7 @@
 export interface AssistantData {
   firstname: string,
   lastname: string,
-  type: string
+  type: number
 }
 
 export interface Assistant extends AssistantData {

@@ -1,53 +1,53 @@
 import {Router} from "express";
+import * as functions from "firebase-functions";
 import {getUserid, isUseridAdmin} from "../utils/useAuth"
 import {assistantsCol} from '../utils/useDb'
-import {Assistant} from "../types/Assistant"
+import {Assistant, AssistantData} from "../types/Assistant"
 
 const assistantRoute = Router();
 
+// -------------
+// GET ASSISTANT
+// -------------
 assistantRoute.get("/assistant/:assistantid", async (req, res) => {
-  // TODO - error handling in getUserid
-  //const userid = getUserid(req);
-
   const docId: string = req.params.assistantid
-  let docFirstName: string = '';
-  let docLastName: string = '';
-  let docType: string = '';
 
-  const docRes: FirebaseFirestore.DocumentData =
-    await assistantsCol.doc(docId).get();
-  if (docRes.exists) {
-    docFirstName = docRes.data().firstname;
-    docLastName = docRes.data().lastname;
-    docType = docRes.data().type;
+  const assistantDoc = await assistantsCol.doc(docId).get();
+  if (assistantDoc.exists) {
+    const assistantData: AssistantData= assistantDoc.data()!;
+    return res.status(200).json({ id: docId, ...assistantData });
   }
 
-  // TODO - Maybe add handling if no doc found?
-
-  return res.status(200).json({
-    id: docId,
-    firstname: docFirstName,
-    lastname: docLastName,
-    type: docType
-  });
+  return res.status(200).json({ });
 });
 
+// ------------------
+// GET ALL ASSISTANTS
+// ------------------
 assistantRoute.get("/assistants", async (req, res) => {
   const resAssistants: Array<Assistant>  = [];
 
-  const docRes: FirebaseFirestore.DocumentData =
+  const assistantDocs =
     await assistantsCol.orderBy("lastname").orderBy("firstname").get();
 
-  docRes.forEach((doc: FirebaseFirestore.DocumentData) => {
+  assistantDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resAssistants.push({ id: doc.id, ...doc.data() });
   });
   
   return res.status(200).json(resAssistants);
 });
 
+// ---------------
+// POST ASSISTANT
+// ---------------
 assistantRoute.post("/assistant", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
 
   if(!req.body.firstname ||
      !req.body.lastname ||
@@ -56,29 +56,59 @@ assistantRoute.post("/assistant", async (req, res) => {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., type: ... }");
   }
 
+  // TODO - Unique constraint check?
+
   let docId: string = '' // Set from res.id
-  const docFirstName: string = req.body.firstname;
-  const docLastName: string = req.body.lastname;
-  const docType: string = req.body.type;
-
-  // TODO - Check that type is valid
-
-  if(await isUseridAdmin(userid)) {
-    const docRes = await assistantsCol.add({
-      firstname: docFirstName,
-      lastname: docLastName,
-      type: docType
-    });
-    docId = docRes.id;
-  } else {
-    return res.status(403).json("Not allowed for non-admin");
+  let assistantData: AssistantData = {
+    firstname: req.body.firstname,
+    lastname: req.body.lastname,
+    type: req.body.type
   }
+
+  functions.logger.log("POST /assistant by " + userid, assistantData);
+  const docRes = await assistantsCol.add(assistantData);
+  docId = docRes.id;
 
   return res.status(200).json({
     id: docId,
-    firstname: docFirstName,
-    lastname: docLastName,
-    type: docType
+    ...assistantData
+  });
+});
+
+// ---------------
+// PUT ASSISTANT
+// ---------------
+assistantRoute.put("/assistant/:assistantid", async (req, res) => {
+  // TODO - error handling in getUserid
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  if(!req.body.firstname ||
+     !req.body.lastname ||
+     !req.body.type)
+  {
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., type: ... }");
+  }
+
+  // TODO - Unique constraint check?
+
+  let docId: string = req.params.assistantid
+  let assistantData: AssistantData = {
+    firstname: req.body.firstname,
+    lastname: req.body.lastname,
+    type: req.body.type
+  }
+
+  functions.logger.log("POST /assistant by " + userid, assistantData);
+  await assistantsCol.doc(docId).set(assistantData);
+
+  return res.status(200).json({
+    id: docId,
+    ...assistantData
   });
 });
 
