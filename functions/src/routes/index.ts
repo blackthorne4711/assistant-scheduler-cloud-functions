@@ -1,19 +1,23 @@
 import * as express from 'express';
+
+import {userRoute}      from './UserRoute';
+import {profileRoute}   from './ProfileRoute';
 import {assistantRoute} from './AssistantRoute';
-import {bookingRoute} from './BookingRoute';
-import {periodRoute} from './PeriodRoute';
-import {profileRoute} from './ProfileRoute';
-import {userRoute} from './UserRoute';
-import {alertRoute} from './AlertRoute';
-import {timeslotRoute} from './TimeslotRoute';
+import {alertRoute}     from './AlertRoute';
+import {periodRoute}    from './PeriodRoute';
+import {scheduleRoute}  from './ScheduleRoute';
+import {timeslotRoute}  from './TimeslotRoute';
+import {bookingRoute}   from './BookingRoute';
 
 export const routes = express.Router();
 
-routes.use(assistantRoute);
-routes.use(bookingRoute);
-routes.use(periodRoute);
-routes.use(profileRoute);
 routes.use(userRoute);
+routes.use(profileRoute);
+routes.use(assistantRoute);
 routes.use(alertRoute);
+routes.use(periodRoute);
+routes.use(scheduleRoute);
 routes.use(timeslotRoute);
+routes.use(bookingRoute);
+
 
