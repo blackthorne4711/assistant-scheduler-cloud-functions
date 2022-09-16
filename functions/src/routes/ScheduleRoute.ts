@@ -99,14 +99,14 @@ scheduleRoute.post("/schedule", async (req, res) => {
 
   let docId: string = '' // Set from res.id
   let scheduleData: ScheduleData = {
-    name: req.body.name,
+    name:              req.body.name,
     scheduleStartDate: req.body.scheduleStartDate,
-    scheduleEndDate: req.body.scheduleEndDate,
-    recurrenceDays: req.body.recurrenceDays,
+    scheduleEndDate:   req.body.scheduleEndDate,
+    recurrenceDays:    req.body.recurrenceDays,
     initStartDatetime: req.body.initStartDatetime,
-    initEndDatetime: req.body.initEndDatetime,
-    period: req.body.period,
-    assistantSlots: req.body.assistantSlots
+    initEndDatetime:   req.body.initEndDatetime,
+    period:            req.body.period,
+    assistantSlots:    req.body.assistantSlots
   }
 
   if (req.body.description) { scheduleData.description = req.body.description; }
@@ -152,14 +152,14 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
 
   let docId: string = req.params.scheduleid
   let scheduleData: ScheduleData = {
-    name: req.body.name,
+    name:              req.body.name,
     scheduleStartDate: req.body.scheduleStartDate,
-    scheduleEndDate: req.body.scheduleEndDate,
-    recurrenceDays: req.body.recurrenceDays,
+    scheduleEndDate:   req.body.scheduleEndDate,
+    recurrenceDays:    req.body.recurrenceDays,
     initStartDatetime: req.body.initStartDatetime,
-    initEndDatetime: req.body.initEndDatetime,
-    period: req.body.period,
-    assistantSlots: req.body.assistantSlots
+    initEndDatetime:   req.body.initEndDatetime,
+    period:            req.body.period,
+    assistantSlots:    req.body.assistantSlots
   }
 
   if (req.body.description) { scheduleData.description = req.body.description; }
