@@ -2,7 +2,7 @@ import * as functions from "firebase-functions";
 import {Router} from "express";
 import {getUserid, isUseridAdmin} from "../utils/useAuth"
 import {profilesCol} from '../utils/useDb'
-import {Profile} from "../types/Profile"
+import {Profile, ProfileData} from "../types/Profile"
 
 const profileRoute = Router();
 
@@ -101,7 +101,7 @@ profileRoute.get("/profiles", async (req, res) => {
 profileRoute.post("/profile", async (req, res) => {
   const userid = getUserid(req);
 
-  if(!req.body.email ||
+  if(!req.body.email     ||
      !req.body.firstname ||
      !req.body.lastname)
   {
@@ -109,9 +109,11 @@ profileRoute.post("/profile", async (req, res) => {
   }
 
   let docId: string = req.body.email; // Set email as id
-  const docEmail: string = req.body.email;
-  const docFirstName: string = req.body.firstname;
-  const docLastName: string = req.body.lastname;
+  let profileData: ProfileData = {
+    email:     req.body.email,
+    firstname: req.body.firstname,
+    lastname:  req.body.lastname
+  }
 
   // TODO - Checks on strings?
 
@@ -129,17 +131,11 @@ profileRoute.post("/profile", async (req, res) => {
   }
 
   // Set Profile (overwrite if exists)
-  await profilesCol.doc(docId).set({
-    email: docEmail,
-    firstName: docFirstName,
-    lastName: docLastName
-  });
+  await profilesCol.doc(docId).set(profileData);
 
     return res.status(200).json({
     id: docId,
-    email: docEmail,
-    firstname: docFirstName,
-    lastname: docLastName,
+    ...profileData,
   });
 });
 

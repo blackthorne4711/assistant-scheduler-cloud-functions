@@ -63,18 +63,18 @@ userRoute.get("/users", async (req, res) => {
 		if (matchingRole && matchingProfile) {
 			resAuthUserRoleProfiles.push({
 		  		...resAuthUsers[i], 
-		  		"admin": matchingRole.admin,
+		  		"admin":             matchingRole.admin,
 		  		"userForAssistants": matchingRole.userForAssistants,
-		  		"firstName": matchingProfile.firstName,
-  				"lastName": matchingProfile.lastName
+		  		"firstname":         matchingProfile.firstname,
+  				"lastname":          matchingProfile.lastname
 	  		});
 		} else if (matchingRole) {
 			resAuthUserRoleProfiles.push({
 		  		...resAuthUsers[i], 
-		  		"admin": matchingRole.admin,
+		  		"admin":             matchingRole.admin,
 		  		"userForAssistants": matchingRole.userForAssistants,
-		  		"firstName": '',
-  				"lastName": ''
+		  		"firstname":         '',
+  				"lastname":          ''
 	  		});
 		}
 	}

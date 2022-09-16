@@ -28,7 +28,7 @@ timeslotRoute.get("/timeslots", async (req, res) => {
   const resTimeslots: Array<Timeslot>  = [];
 
   const timeslotDocs =
-    await timeslotsCol.orderBy("startDatetime").get();
+    await timeslotsCol.orderBy("startTime", "desc").get();
 
   timeslotDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resTimeslots.push({ id: doc.id, ...doc.data() });
@@ -48,7 +48,7 @@ timeslotRoute.get("/timeslots/period/:periodid", async (req, res) => {
   const resTimeslots: Array<Timeslot>  = [];
 
   const timeslotDocs =
-    await timeslotsCol.where('period', '==', periodId).orderBy("startDatetime").get();
+    await timeslotsCol.where('period', '==', periodId).orderBy("startTime", "desc").get();
 
   timeslotDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resTimeslots.push({ id: doc.id, ...doc.data() });
@@ -69,25 +69,25 @@ timeslotRoute.post("/timeslot", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.date ||
-     !req.body.startDatetime ||
-     !req.body.endDatetime ||
-     !req.body.period ||
+  if(!req.body.date      ||
+     !req.body.startTime ||
+     !req.body.endTime   ||
+     !req.body.period    ||
      !req.body.assistantSlots)
   {
     return res.status(400).send(
-      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startDatetime\": ..., \"endDatetime\": ..., \"period\": ... \"assistantSlots\": [...] }");
+      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"period\": ... \"assistantSlots\": [...] }");
   }
 
   // TODO - Unique constraint check?
 
   let docId: string = '' // Set from res.id
   let timeslotData: TimeslotData = {
-  date: req.body.date,
-  startDatetime: req.body.startDatetime,
-  endDatetime: req.body.endDatetime,
-  period: req.body.period,
-  assistantSlots: req.body.assistantSlots,
+    date:           req.body.date,
+    startTime:      req.body.startTime,
+    endTime:        req.body.endTime,
+    period:         req.body.period,
+    assistantSlots: req.body.assistantSlots,
   };
 
   if (req.body.fromSchedule) { timeslotData.fromSchedule = req.body.fromSchedule; }
@@ -118,32 +118,32 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.date ||
-     !req.body.startDatetime ||
-     !req.body.endDatetime ||
-     !req.body.period ||
+  if(!req.body.date      ||
+     !req.body.startTime ||
+     !req.body.endTime   ||
+     !req.body.period    ||
      !req.body.assistantSlots)
   {
     return res.status(400).send(
-      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startDatetime\": ..., \"endDatetime\": ..., \"period\": ... \"assistantSlots\": [...] }");
+      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"period\": ... \"assistantSlots\": [...] }");
   }
 
   // TODO - Unique constraint check?
 
   let docId: string = req.params.timeslotid
   let timeslotData: TimeslotData = {
-  date: req.body.date,
-  startDatetime: req.body.startDatetime,
-  endDatetime: req.body.endDatetime,
-  period: req.body.period,
+  date:           req.body.date,
+  startTime:      req.body.startTime,
+  endTime:        req.body.endTime,
+  period:         req.body.period,
   assistantSlots: req.body.assistantSlots,
   };
 
   if (req.body.fromSchedule) { timeslotData.fromSchedule = req.body.fromSchedule; }
-  if (req.body.description) { timeslotData.description = req.body.description; }
-  if (req.body.contact) { timeslotData.contact = req.body.contact; }
-  if (req.body.color) { timeslotData.color = req.body.color; }
-  if (req.body.type) { timeslotData.type = req.body.type; }
+  if (req.body.description)  { timeslotData.description  = req.body.description;  }
+  if (req.body.contact)      { timeslotData.contact      = req.body.contact;      }
+  if (req.body.color)        { timeslotData.color        = req.body.color;        }
+  if (req.body.type)         { timeslotData.type         = req.body.type;         }
 
   functions.logger.log("PUT /timeslot by " + userid, timeslotData);
   await timeslotsCol.doc(docId).set(timeslotData);

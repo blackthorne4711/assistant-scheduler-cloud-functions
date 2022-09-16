@@ -29,7 +29,7 @@ periodRoute.get("/periods", async (req, res) => {
   const resPeriods: Array<Period>  = [];
 
   const periodDocs =
-    await periodsCol.orderBy("from").get();
+    await periodsCol.orderBy("from", "desc").get();
 
   periodDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resPeriods.push({ id: doc.id, ...doc.data() });

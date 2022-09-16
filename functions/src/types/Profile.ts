@@ -1,7 +1,7 @@
 export interface ProfileData {
   email: string,
-  firstName: string,
-  lastName: string
+  firstname: string,
+  lastname: string
 }
 
 export interface Profile extends ProfileData {

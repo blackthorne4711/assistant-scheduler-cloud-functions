@@ -1,8 +1,8 @@
 export interface AlertData {
-  alertDate: string, // YYYY-MM-DD
-  alertType: string,
-  alertTitle: string,
-  alertText: string
+  date:  string, // YYYY-MM-DD
+  type:  string,
+  title: string,
+  text:  string
 }
 
 export interface Alert extends AlertData {

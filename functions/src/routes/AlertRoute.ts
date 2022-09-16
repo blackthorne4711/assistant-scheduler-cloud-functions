@@ -13,7 +13,7 @@ alertRoute.get("/alerts", async (req, res) => {
   const resAlerts: Array<Alert>  = [];
 
   const alertDocs =
-    await alertsCol.orderBy("alertDate", "desc").get();
+    await alertsCol.orderBy("date", "desc").get();
 
   alertDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resAlerts.push({ id: doc.id, ...doc.data() });
@@ -34,20 +34,19 @@ alertRoute.post("/alert", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.alertDate ||
-     !req.body.alertType ||
-     !req.body.alertTitle ||
-     !req.body.alertText)
+  if(!req.body.date  ||
+     !req.body.type  ||
+     !req.body.title)
   {
-    return res.status(400).send("Incorrect body.\n Correct syntax is: { alertDate: ..., alertType: ..., alertTitle: ..., alertText: ...}");
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { date: ..., type: ..., title: ..., ...}");
   }
 
   let docId: string = '' // Set from res.id
   let alertData: AlertData = {
-    alertDate: req.body.alertDate,
-    alertType: req.body.alertType,
-    alertTitle: req.body.alertTitle,
-    alertText: req.body.alertText
+    date:  req.body.date,
+    type:  req.body.type,
+    title: req.body.title,
+    text:  req.body.text
   };
 
   functions.logger.log("POST /alert by " + userid, alertData);
@@ -72,20 +71,19 @@ alertRoute.put("/alert/:alertid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.alertDate ||
-     !req.body.alertType ||
-     !req.body.alertTitle ||
-     !req.body.alertText)
+  if(!req.body.date  ||
+     !req.body.type  ||
+     !req.body.title)
   {
-    return res.status(400).send("Incorrect body.\n Correct syntax is: { alertDate: ..., alertType: ..., alertTitle: ..., alertText: ...}");
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { date: ..., type: ..., title: ..., ...}");
   }
 
   const docId: string = req.params.alertid
   let alertData: AlertData = {
-    alertDate: req.body.alertDate,
-    alertType: req.body.alertType,
-    alertTitle: req.body.alertTitle,
-    alertText: req.body.alertText
+    date:  req.body.alertDate,
+    type:  req.body.alertType,
+    title: req.body.alertTitle,
+    text:  req.body.alertText
   };
 
   functions.logger.log("PUT /alert by " + userid, alertData);
