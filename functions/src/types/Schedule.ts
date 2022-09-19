@@ -4,8 +4,8 @@ export interface ScheduleData {
   scheduleStartDate: string, // YYYY-MM-DD
   scheduleEndDate:   string, // YYYY-MM-DD
   recurrenceDays:    string, // Number of days between each timeslot, e.g. 7 for weekly
-  initStartDatetime: string, // YYYY-MM-DD HH24:MM:SS
-  initEndDatetime:   string, // YYYY-MM-DD HH24:MM:SS
+  startTime:         string, // HH24:MM
+  endTime:           string, // HH24:MM
 
   period:            string, // For period status handling, e.g. only generate timeslots for OPEN period
 

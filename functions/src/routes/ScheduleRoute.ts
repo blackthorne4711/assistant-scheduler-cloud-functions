@@ -57,22 +57,6 @@ scheduleRoute.get("/schedules/period/:periodid", async (req, res) => {
   return res.status(200).json(resSchedules);
 });
 
-// name:              string,
-
-// scheduleStartDate: string, // YYYY-MM-DD
-// scheduleEndDate:   string, // YYYY-MM-DD
-// recurrenceDays:    string, // Number of days between each timeslot, e.g. 7 for weekly
-// initStartDatetime: string, // YYYY-MM-DD HH24:MM:SS
-// initEndDatetime:   string, // YYYY-MM-DD HH24:MM:SS
-
-// period:            string, // For period status handling, e.g. only generate timeslots for OPEN period
-
-// description?:      string, // Free text field for individual timeslot
-// color?:            string, // For visualization in frontend
-// type?:             string, // For filtering in frontend
-// contact?:          string, // For info
-// assistantSlots:    Array<number>, // Array of slots (number) in increasing assistant level
-
 // ---------------
 // POST SCHEDULE
 // ---------------
@@ -89,12 +73,12 @@ scheduleRoute.post("/schedule", async (req, res) => {
      !req.body.scheduleStartDate ||
      !req.body.scheduleEndDate   ||
      !req.body.recurrenceDays    ||
-     !req.body.initStartDatetime ||
-     !req.body.initEndDatetime   ||
+     !req.body.startTime         ||
+     !req.body.endTime           ||
      !req.body.period            ||
      !req.body.assistantSlots)
   {
-    return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., scheduleStartDate: ..., scheduleEndDate: ..., recurrenceDays: ..., recurrenceDays: ..., initStartDatetime: ..., initEndDatetime: ..., period: ..., assistantSlots: [...], ... }");
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., scheduleStartDate: ..., scheduleEndDate: ..., recurrenceDays: ..., recurrenceDays: ..., startTime: ..., endTime: ..., period: ..., assistantSlots: [...], ... }");
   }
 
   let docId: string = '' // Set from res.id
@@ -103,8 +87,8 @@ scheduleRoute.post("/schedule", async (req, res) => {
     scheduleStartDate: req.body.scheduleStartDate,
     scheduleEndDate:   req.body.scheduleEndDate,
     recurrenceDays:    req.body.recurrenceDays,
-    initStartDatetime: req.body.initStartDatetime,
-    initEndDatetime:   req.body.initEndDatetime,
+    startTime:         req.body.startTime,
+    endTime:           req.body.endTime,
     period:            req.body.period,
     assistantSlots:    req.body.assistantSlots
   }
@@ -140,12 +124,13 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
      !req.body.scheduleStartDate ||
      !req.body.scheduleEndDate   ||
      !req.body.recurrenceDays    ||
-     !req.body.initStartDatetime ||
-     !req.body.initEndDatetime   ||
+     !req.body.startTime         ||
+     !req.body.endTime           ||
      !req.body.period            ||
      !req.body.assistantSlots)
   {
-    return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., scheduleStartDate: ..., scheduleEndDate: ..., recurrenceDays: ..., recurrenceDays: ..., initStartDatetime: ..., initEndDatetime: ..., period: ..., assistantSlots: [...], ... }");
+    functions.logger.info("Incorrect body - " +req.body);
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., scheduleStartDate: ..., scheduleEndDate: ..., recurrenceDays: ..., recurrenceDays: ..., startTime: ..., endTime: ..., period: ..., assistantSlots: [...], ... }");
   }
 
   // TODO - Unique constraint check?
@@ -156,8 +141,8 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
     scheduleStartDate: req.body.scheduleStartDate,
     scheduleEndDate:   req.body.scheduleEndDate,
     recurrenceDays:    req.body.recurrenceDays,
-    initStartDatetime: req.body.initStartDatetime,
-    initEndDatetime:   req.body.initEndDatetime,
+    startTime:         req.body.startTime,
+    endTime:           req.body.endTime,
     period:            req.body.period,
     assistantSlots:    req.body.assistantSlots
   }

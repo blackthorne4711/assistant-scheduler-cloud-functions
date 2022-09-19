@@ -90,11 +90,12 @@ timeslotRoute.post("/timeslot", async (req, res) => {
     assistantSlots: req.body.assistantSlots,
   };
 
-  if (req.body.fromSchedule) { timeslotData.fromSchedule = req.body.fromSchedule; }
-  if (req.body.description) { timeslotData.description = req.body.description; }
-  if (req.body.contact) { timeslotData.contact = req.body.contact; }
-  if (req.body.color) { timeslotData.color = req.body.color; }
-  if (req.body.type) { timeslotData.type = req.body.type; }
+  if (req.body.fromSchedule)     { timeslotData.fromSchedule     = req.body.fromSchedule;     }
+  if (req.body.fromScheduleName) { timeslotData.fromScheduleName = req.body.fromScheduleName; }
+  if (req.body.description)      { timeslotData.description      = req.body.description;      }
+  if (req.body.contact)          { timeslotData.contact          = req.body.contact;          }
+  if (req.body.color)            { timeslotData.color            = req.body.color;            }
+  if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   functions.logger.log("POST /timeslot by " + userid, timeslotData);
   const docRes = await timeslotsCol.add(timeslotData);
@@ -139,11 +140,12 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   assistantSlots: req.body.assistantSlots,
   };
 
-  if (req.body.fromSchedule) { timeslotData.fromSchedule = req.body.fromSchedule; }
-  if (req.body.description)  { timeslotData.description  = req.body.description;  }
-  if (req.body.contact)      { timeslotData.contact      = req.body.contact;      }
-  if (req.body.color)        { timeslotData.color        = req.body.color;        }
-  if (req.body.type)         { timeslotData.type         = req.body.type;         }
+  if (req.body.fromSchedule)     { timeslotData.fromSchedule     = req.body.fromSchedule;     }
+  if (req.body.fromScheduleName) { timeslotData.fromScheduleName = req.body.fromScheduleName; }
+  if (req.body.description)      { timeslotData.description      = req.body.description;      }
+  if (req.body.contact)          { timeslotData.contact          = req.body.contact;          }
+  if (req.body.color)            { timeslotData.color            = req.body.color;            }
+  if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   functions.logger.log("PUT /timeslot by " + userid, timeslotData);
   await timeslotsCol.doc(docId).set(timeslotData);
@@ -168,6 +170,26 @@ timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
   }
 
   await timeslotsCol.doc(docId).delete();
+
+  return res.status(200).json({ });
+});
+
+// -----------------------------------
+// DELETE ALL TIMESLOTS FROM SCHEDULE
+// -----------------------------------
+timeslotRoute.delete("/timeslots/schedule/:scheduleid", async (req, res) => {
+  const scheduleid: string = req.params.scheduleid;
+
+  const userid = getUserid(req);
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) { return res.status(403).json("Not allowed for non-admin"); }
+
+  try {
+    var timeslotsRef = await timeslotsCol.where('fromSchedule', '==', scheduleid).get();
+    timeslotsRef.forEach((timeslot) => { timeslot.ref.delete(); });
+  } catch (error) {
+    return res.status(500).json({ status: 'error', msg: 'Error deleting timeslots for schedule - ' + scheduleid, data: error, });
+  }
 
   return res.status(200).json({ });
 });
