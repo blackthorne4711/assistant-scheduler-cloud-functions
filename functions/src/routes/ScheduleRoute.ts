@@ -1,16 +1,17 @@
-import {Router} from "express";
-import * as functions from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth"
-import {schedulesCol} from '../utils/useDb'
-import {Schedule, ScheduleData} from "../types/Schedule"
+import {Router}                   from "express";
+import * as functions             from "firebase-functions";
+import {getUserid, isUseridAdmin} from "../utils/useAuth";
+import {schedulesCol}             from "../utils/useDb";
+import {Schedule, ScheduleData}   from "../types/Schedule";
 
+/* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const scheduleRoute = Router();
 
 // -------------
 // GET SCHEDULE
 // -------------
 scheduleRoute.get("/schedule/:scheduleid", async (req, res) => {
-  const docId: string = req.params.scheduleid
+  const docId: string = req.params.scheduleid;
 
   const scheduleDoc = await schedulesCol.doc(docId).get();
   if (scheduleDoc.exists) {
@@ -41,14 +42,10 @@ scheduleRoute.get("/schedules", async (req, res) => {
 // GET ALL SCHEDULES FOR PERIOD
 // -----------------------------
 scheduleRoute.get("/schedules/period/:periodid", async (req, res) => {
-  const periodId: string = req.params.periodid
-
-  console.log(periodId)
-
+  const periodId: string = req.params.periodid;
   const resSchedules: Array<Schedule>  = [];
-
   const scheduleDocs =
-    await schedulesCol.where('period', '==', periodId).orderBy("scheduleStartDate").get();
+    await schedulesCol.where("period", "==", periodId).orderBy("scheduleStartDate").get();
 
   scheduleDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resSchedules.push({ id: doc.id, ...doc.data() });
@@ -69,20 +66,20 @@ scheduleRoute.post("/schedule", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.name              ||
-     !req.body.scheduleStartDate ||
-     !req.body.scheduleEndDate   ||
-     !req.body.recurrenceDays    ||
-     !req.body.startTime         ||
-     !req.body.endTime           ||
-     !req.body.period            ||
-     !req.body.assistantSlots)
+  if (!req.body.name              ||
+      !req.body.scheduleStartDate ||
+      !req.body.scheduleEndDate   ||
+      !req.body.recurrenceDays    ||
+      !req.body.startTime         ||
+      !req.body.endTime           ||
+      !req.body.period            ||
+      !req.body.assistantSlots)
   {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., scheduleStartDate: ..., scheduleEndDate: ..., recurrenceDays: ..., recurrenceDays: ..., startTime: ..., endTime: ..., period: ..., assistantSlots: [...], ... }");
   }
 
-  let docId: string = '' // Set from res.id
-  let scheduleData: ScheduleData = {
+  let docId = ""; // Set from res.id
+  const scheduleData: ScheduleData = {
     name:              req.body.name,
     scheduleStartDate: req.body.scheduleStartDate,
     scheduleEndDate:   req.body.scheduleEndDate,
@@ -90,8 +87,8 @@ scheduleRoute.post("/schedule", async (req, res) => {
     startTime:         req.body.startTime,
     endTime:           req.body.endTime,
     period:            req.body.period,
-    assistantSlots:    req.body.assistantSlots
-  }
+    assistantSlots:    req.body.assistantSlots,
+  };
 
   if (req.body.description) { scheduleData.description = req.body.description; }
   if (req.body.color)       { scheduleData.color       = req.body.color;       }
@@ -104,7 +101,7 @@ scheduleRoute.post("/schedule", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...scheduleData
+    ...scheduleData,
   });
 });
 
@@ -120,14 +117,14 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.name              ||
-     !req.body.scheduleStartDate ||
-     !req.body.scheduleEndDate   ||
-     !req.body.recurrenceDays    ||
-     !req.body.startTime         ||
-     !req.body.endTime           ||
-     !req.body.period            ||
-     !req.body.assistantSlots)
+  if (!req.body.name              ||
+      !req.body.scheduleStartDate ||
+      !req.body.scheduleEndDate   ||
+      !req.body.recurrenceDays    ||
+      !req.body.startTime         ||
+      !req.body.endTime           ||
+      !req.body.period            ||
+      !req.body.assistantSlots)
   {
     functions.logger.info("Incorrect body - " +req.body);
     return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., scheduleStartDate: ..., scheduleEndDate: ..., recurrenceDays: ..., recurrenceDays: ..., startTime: ..., endTime: ..., period: ..., assistantSlots: [...], ... }");
@@ -135,8 +132,8 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
 
   // TODO - Unique constraint check?
 
-  let docId: string = req.params.scheduleid
-  let scheduleData: ScheduleData = {
+  const docId: string = req.params.scheduleid;
+  const scheduleData: ScheduleData = {
     name:              req.body.name,
     scheduleStartDate: req.body.scheduleStartDate,
     scheduleEndDate:   req.body.scheduleEndDate,
@@ -144,8 +141,8 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
     startTime:         req.body.startTime,
     endTime:           req.body.endTime,
     period:            req.body.period,
-    assistantSlots:    req.body.assistantSlots
-  }
+    assistantSlots:    req.body.assistantSlots,
+  };
 
   if (req.body.description) { scheduleData.description = req.body.description; }
   if (req.body.color)       { scheduleData.color       = req.body.color;       }
@@ -157,8 +154,56 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...scheduleData
+    ...scheduleData,
   });
+});
+
+// -------------
+// DELETE SCHEDULE
+// -------------
+scheduleRoute.delete("/schedule/:scheduleid", async (req, res) => {
+  const docId: string = req.params.scheduleid;
+
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  functions.logger.log("DELETE /schedule/" + docId + " by " + userid);
+  await schedulesCol.doc(docId).delete();
+
+  return res.status(200).json({ });
+});
+
+// ---------------------
+// DELETE SCHEDULE LIST
+// ---------------------
+scheduleRoute.delete("/schedule", async (req, res) => {
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  const delScheduleList: Array<Schedule> = req.body.scheduleList;
+
+  if (!delScheduleList) {
+    functions.logger.info("Incorrect body - " + req.body);
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { scheduleList: ... }");
+  }
+
+  functions.logger.log("DELETE /schedule (list) by " + userid, delScheduleList);
+
+  delScheduleList.forEach( async (schedule) =>  {
+    if (schedule.id) {
+      await schedulesCol.doc(schedule.id).delete();
+    }
+  });
+
+  return res.status(200).json({ });
 });
 
 export {scheduleRoute};

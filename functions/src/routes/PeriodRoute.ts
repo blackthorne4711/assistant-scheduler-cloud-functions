@@ -1,18 +1,18 @@
-import {Router} from "express";
-import * as functions from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth"
-import {periodsCol} from '../utils/useDb'
-import {Period, PeriodData, PeriodStatus} from "../types/Period"
-//import {TimeslotData} from "../types/Timeslot"
+import {Router}                           from "express";
+import * as functions                     from "firebase-functions";
+import {getUserid, isUseridAdmin}         from "../utils/useAuth";
+import {periodsCol}                       from "../utils/useDb";
+import {Period, PeriodData, PeriodStatus} from "../types/Period";
+// import {TimeslotData} from "../types/Timeslot"
 
+/* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const periodRoute = Router();
 
 // ----------
 // GET PERIOD
 // ----------
 periodRoute.get("/period/:periodid", async (req, res) => {
-  const docId: string = req.params.periodid
-
+  const docId: string = req.params.periodid;
   const periodDoc = await periodsCol.doc(docId).get();
   if (periodDoc.exists) {
     const periodData: PeriodData = periodDoc.data()!;
@@ -50,10 +50,9 @@ periodRoute.post("/period", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.name ||
-     !req.body.from ||
-     !req.body.to)
-  {
+  if (!req.body.name ||
+      !req.body.from ||
+      !req.body.to) {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., from: ..., to: ..., description?: ...}");
   }
 
@@ -91,11 +90,11 @@ periodRoute.post("/period", async (req, res) => {
 
   // TODO - Unique constraint check?
 
-  let docId: string = '' // Set from res.id
-  let periodData: PeriodData = {
-    name: req.body.name,
-    from: req.body.from,
-    to: req.body.to,
+  let docId: string = ""; // Set from res.id
+  const periodData: PeriodData = {
+    name:   req.body.name,
+    from:   req.body.from,
+    to:     req.body.to,
     status: PeriodStatus.PREPARE,
   };
 
@@ -107,7 +106,7 @@ periodRoute.post("/period", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...periodData
+    ...periodData,
   });
 });
 
@@ -123,18 +122,12 @@ periodRoute.put("/period/:periodid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.name ||
-     !req.body.from ||
-     !req.body.to   ||
-     !req.body.status)
-  {
+  if (!req.body.name ||
+      !req.body.from ||
+      !req.body.to   ||
+      !req.body.status) {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { name: ..., from: ..., to: ..., status: ..., description?: ...}");
   }
-
-  // if(!Object.values(PeriodStatus).includes(req.body.status)) {
-  //   functions.logger.error("PUT /period incorrect status", req.body.status);
-  //   return res.status(400).send("Incorrect status");
-  // }
 
   try {
     const nowDate = new Date();
@@ -165,11 +158,11 @@ periodRoute.put("/period/:periodid", async (req, res) => {
 
   // TODO - Unique constraint check?
 
-  const docId: string = req.params.periodid
-  let periodData: PeriodData = {
-    name: req.body.name,
-    from: req.body.from,
-    to: req.body.to,
+  const docId: string = req.params.periodid;
+  const periodData: PeriodData = {
+    name:   req.body.name,
+    from:   req.body.from,
+    to:     req.body.to,
     status: req.body.status,
   };
 
@@ -180,12 +173,12 @@ periodRoute.put("/period/:periodid", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...periodData
+    ...periodData,
   });
 });
 
 // -------------
-// DELETE PERIOD
+// DELETE period
 // -------------
 periodRoute.delete("/period/:periodid", async (req, res) => {
   const docId: string = req.params.periodid;
@@ -197,7 +190,37 @@ periodRoute.delete("/period/:periodid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
+  functions.logger.log("DELETE /period/" + docId + " by " + userid);
   await periodsCol.doc(docId).delete();
+
+  return res.status(200).json({ });
+});
+
+// ---------------------
+// DELETE period LIST
+// ---------------------
+periodRoute.delete("/period", async (req, res) => {
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  const delperiodList: Array<Period> = req.body.periodList;
+
+  if (!delperiodList) {
+    functions.logger.info("Incorrect body - " + req.body);
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { periodList: ... }");
+  }
+
+  functions.logger.log("DELETE /period (list) by " + userid, delperiodList);
+
+  delperiodList.forEach( async (period) =>  {
+    if (period.id) {
+      await periodsCol.doc(period.id).delete();
+    }
+  });
 
   return res.status(200).json({ });
 });

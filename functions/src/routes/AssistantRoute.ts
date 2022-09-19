@@ -1,17 +1,17 @@
-import {Router} from "express";
-import * as functions from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth"
-import {assistantsCol} from '../utils/useDb'
-import {Assistant, AssistantData} from "../types/Assistant"
+import {Router}                   from "express";
+import * as functions             from "firebase-functions";
+import {getUserid, isUseridAdmin} from "../utils/useAuth";
+import {assistantsCol}            from "../utils/useDb";
+import {Assistant, AssistantData} from "../types/Assistant";
 
+/* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const assistantRoute = Router();
 
 // -------------
 // GET ASSISTANT
 // -------------
 assistantRoute.get("/assistant/:assistantid", async (req, res) => {
-  const docId: string = req.params.assistantid
-
+  const docId: string = req.params.assistantid;
   const assistantDoc = await assistantsCol.doc(docId).get();
   if (assistantDoc.exists) {
     const assistantData: AssistantData= assistantDoc.data()!;
@@ -26,7 +26,6 @@ assistantRoute.get("/assistant/:assistantid", async (req, res) => {
 // ------------------
 assistantRoute.get("/assistants", async (req, res) => {
   const resAssistants: Array<Assistant>  = [];
-
   const assistantDocs =
     await assistantsCol.orderBy("lastname").orderBy("firstname").get();
 
@@ -43,27 +42,25 @@ assistantRoute.get("/assistants", async (req, res) => {
 assistantRoute.post("/assistant", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
-
   const isAdmin: boolean = await isUseridAdmin(userid);
   if (!isAdmin) {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.firstname ||
-     !req.body.lastname ||
-     !req.body.type)
-  {
+  if (!req.body.firstname ||
+      !req.body.lastname ||
+      !req.body.type) {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., type: ... }");
   }
 
   // TODO - Unique constraint check?
 
-  let docId: string = '' // Set from res.id
-  let assistantData: AssistantData = {
+  let docId: string = ""; // Set from res.id
+  const assistantData: AssistantData = {
     firstname: req.body.firstname,
-    lastname: req.body.lastname,
-    type: req.body.type
-  }
+    lastname:  req.body.lastname,
+    type:      req.body.type,
+  };
 
   functions.logger.log("POST /assistant by " + userid, assistantData);
   const docRes = await assistantsCol.add(assistantData);
@@ -71,7 +68,7 @@ assistantRoute.post("/assistant", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...assistantData
+    ...assistantData,
   });
 });
 
@@ -87,28 +84,27 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.firstname ||
-     !req.body.lastname ||
-     !req.body.type)
-  {
+  if (!req.body.firstname ||
+      !req.body.lastname  ||
+      !req.body.type) {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., type: ... }");
   }
 
   // TODO - Unique constraint check?
 
-  let docId: string = req.params.assistantid
-  let assistantData: AssistantData = {
+  const docId: string = req.params.assistantid;
+  const assistantData: AssistantData = {
     firstname: req.body.firstname,
-    lastname: req.body.lastname,
-    type: req.body.type
-  }
+    lastname:  req.body.lastname,
+    type:      req.body.type,
+  };
 
   functions.logger.log("POST /assistant by " + userid, assistantData);
   await assistantsCol.doc(docId).set(assistantData);
 
   return res.status(200).json({
     id: docId,
-    ...assistantData
+    ...assistantData,
   });
 });
 

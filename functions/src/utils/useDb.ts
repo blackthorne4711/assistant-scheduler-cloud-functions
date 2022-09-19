@@ -7,30 +7,31 @@ export const app = admin.initializeApp();
 export const db = admin.firestore();
 
 // ToDO - Should this be used or not?
-db.settings({ ignoreUndefinedProperties: true })
+db.settings({ignoreUndefinedProperties: true});
 
 // This is just a helper to add the type to the db responses
 const createCollection =
   <T = FirebaseFirestore.DocumentData>(collectionName: string) => {
-  return db.collection(collectionName) as FirebaseFirestore.CollectionReference<T>;
-}
+    return (db.collection(collectionName) as
+      FirebaseFirestore.CollectionReference<T>);
+  };
 
 // Import all your model types
-import { AssistantData } from '../types/Assistant'
-import { BookingData } from '../types/Booking'
-import { PeriodData } from '../types/Period'
-import { ProfileData } from '../types/Profile'
-import { RoleData } from '../types/Role'
-import { TimeslotData } from '../types/Timeslot'
-import { ScheduleData } from '../types/Schedule'
-import { AlertData } from '../types/Alert'
+import {AssistantData} from "../types/Assistant";
+import {BookingData} from "../types/Booking";
+import {PeriodData} from "../types/Period";
+import {ProfileData} from "../types/Profile";
+import {RoleData} from "../types/Role";
+import {TimeslotData} from "../types/Timeslot";
+import {ScheduleData} from "../types/Schedule";
+import {AlertData} from "../types/Alert";
 
 // export all your collections
-export const assistantsCol = createCollection<AssistantData>('assistants')
-export const bookingsCol = createCollection<BookingData>('bookings')
-export const periodsCol = createCollection<PeriodData>('periods')
-export const profilesCol = createCollection<ProfileData>('profiles')
-export const rolesCol = createCollection<RoleData>('roles')
-export const timeslotsCol = createCollection<TimeslotData>('timeslots')
-export const schedulesCol = createCollection<ScheduleData>('schedules')
-export const alertsCol = createCollection<AlertData>('alerts')
+export const assistantsCol = createCollection<AssistantData>("assistants");
+export const bookingsCol = createCollection<BookingData>("bookings");
+export const periodsCol = createCollection<PeriodData>("periods");
+export const profilesCol = createCollection<ProfileData>("profiles");
+export const rolesCol = createCollection<RoleData>("roles");
+export const timeslotsCol = createCollection<TimeslotData>("timeslots");
+export const schedulesCol = createCollection<ScheduleData>("schedules");
+export const alertsCol = createCollection<AlertData>("alerts");

@@ -14,8 +14,8 @@ export interface Booking extends BookingData {
 }
 
 export enum BookingStatus {
-  REQUESTED = 'REQUESTED',
-  ACCEPTED  = 'ACCEPTED' ,
-  REJECTED  = 'REJECTED' , // Automatic reject - by booking rules
-  REMOVED   = 'REMOVED'  , // Manual removal - either by user or admin
+  REQUESTED = "REQUESTED",
+  ACCEPTED  = "ACCEPTED" ,
+  REJECTED  = "REJECTED" , // Automatic reject - by booking rules
+  REMOVED   = "REMOVED"  , // Manual removal - either by user or admin
 }

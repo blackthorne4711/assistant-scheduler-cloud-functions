@@ -1,9 +1,10 @@
-import * as functions from "firebase-functions";
-import {Router} from "express";
-import {getUserid, isUseridAdmin} from "../utils/useAuth"
-import {profilesCol} from '../utils/useDb'
-import {Profile, ProfileData} from "../types/Profile"
+import * as functions             from "firebase-functions";
+import {Router}                   from "express";
+import {getUserid, isUseridAdmin} from "../utils/useAuth";
+import {profilesCol}              from "../utils/useDb";
+import {Profile, ProfileData}     from "../types/Profile";
 
+/* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const profileRoute = Router();
 
 // -------------------------------------------------------------
@@ -13,11 +14,11 @@ profileRoute.get("/profile", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
-  const docId: string = userid
-  let docEmail: string = '';
-  let docFirstName: string = '';
-  let docLastName: string = '';
-  let docRole: string = '';
+  const docId:      string = userid;
+  let docEmail:     string = "";
+  let docFirstName: string = "";
+  let docLastName:  string = "";
+  let docRole:      string = "";
 
   const docRes: FirebaseFirestore.DocumentData =
     await profilesCol.doc(userid).get();
@@ -25,10 +26,10 @@ profileRoute.get("/profile", async (req, res) => {
     docEmail = docRes.data().email;
     docFirstName = docRes.data().firstName;
     docLastName = docRes.data().lastName;
-    docRole = 'USER';
+    docRole = "USER";
 
     if (await isUseridAdmin(userid)) {
-      docRole = 'ADMIN';
+      docRole = "ADMIN";
     }
   }
 
@@ -51,11 +52,10 @@ profileRoute.get("/profile", async (req, res) => {
 profileRoute.get("/profile/:userid", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = req.params.userid;
-
-  const docId: string = userid
-  let docEmail: string = '';
-  let docFirstName: string = '';
-  let docLastName: string = '';
+  const docId:      string = userid;
+  let docEmail:     string = "";
+  let docFirstName: string = "";
+  let docLastName:  string = "";
 
   const docRes: FirebaseFirestore.DocumentData =
     await profilesCol.doc(userid).get();
@@ -101,19 +101,19 @@ profileRoute.get("/profiles", async (req, res) => {
 profileRoute.post("/profile", async (req, res) => {
   const userid = getUserid(req);
 
-  if(!req.body.email     ||
-     !req.body.firstname ||
-     !req.body.lastname)
+  if (!req.body.email     ||
+      !req.body.firstname ||
+      !req.body.lastname)
   {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { email: ..., firstname: ..., lastname: ... }");
   }
 
-  let docId: string = req.body.email; // Set email as id
-  let profileData: ProfileData = {
+  const docId: string = req.body.email; // Set email as id
+  const profileData: ProfileData = {
     email:     req.body.email,
     firstname: req.body.firstname,
-    lastname:  req.body.lastname
-  }
+    lastname:  req.body.lastname,
+  };
 
   // TODO - Checks on strings?
 

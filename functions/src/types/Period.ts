@@ -11,9 +11,9 @@ export interface Period extends PeriodData {
 }
 
 export enum PeriodStatus {
-  PREPARE = 'PREPARE',
-  OPEN = 'OPEN',
-  CLOSED = 'CLOSED',
-  ARCHIVED = 'ARCHIVED',
-  UNDEFINED = '',
+  PREPARE = "PREPARE",
+  OPEN = "OPEN",
+  CLOSED = "CLOSED",
+  ARCHIVED = "ARCHIVED",
+  UNDEFINED = "",
 }

@@ -1,19 +1,19 @@
-import {Router} from "express";
-import * as functions from "firebase-functions";
-import {getUserid, isUseridAdmin, isUserForAssistant, getAssistantType} from "../utils/useAuth"
-import {bookingsCol, timeslotsCol, periodsCol} from '../utils/useDb'
-import {Booking, BookingData, BookingStatus} from "../types/Booking"
-import {PeriodStatus} from "../types/Period"
-//import {TimeslotData} from "../types/Timeslot"
+import {Router}                                                         from "express";
+import * as functions                                                   from "firebase-functions";
+import {getUserid, isUseridAdmin, isUserForAssistant, getAssistantType} from "../utils/useAuth";
+import {bookingsCol, timeslotsCol, periodsCol}                          from "../utils/useDb";
+import {Booking, BookingData, BookingStatus}                            from "../types/Booking";
+import {PeriodStatus}                                                   from "../types/Period";
+// import {TimeslotData} from "../types/Timeslot"
 
+/* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const bookingRoute = Router();
 
 // -------------
 // GET BOOKING
 // -------------
 bookingRoute.get("/booking/:bookingid", async (req, res) => {
-  const docId: string = req.params.bookingid
-
+  const docId: string = req.params.bookingid;
   const bookingDoc = await bookingsCol.doc(docId).get();
   if (bookingDoc.exists) {
     const bookingData: BookingData = bookingDoc.data()!;
@@ -43,12 +43,11 @@ bookingRoute.get("/bookings", async (req, res) => {
 // GET ALL BOOKINGS FOR TIMESLOT
 // ------------------------------
 bookingRoute.get("/bookings/timeslot/:timeslotid", async (req, res) => {
-  const timeslotId: string = req.params.timeslotid
-
+  const timeslotId: string = req.params.timeslotid;
   const resBookings: Array<Booking>  = [];
 
   const bookingDocs =
-    await bookingsCol.where('timeslot', '==', timeslotId).orderBy("timeslot").orderBy("assistant").get();
+    await bookingsCol.where("timeslot", "==", timeslotId).orderBy("timeslot").orderBy("assistant").get();
 
   bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resBookings.push({ id: doc.id, ...doc.data() });
@@ -64,23 +63,23 @@ bookingRoute.post("/booking", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
-  if(!req.body.timeslot ||
-     !req.body.assistant)
+  if (!req.body.timeslot ||
+      !req.body.assistant)
   {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { timeslot: ..., assistant: ..., ... }");
   }
 
   const assistantType = await getAssistantType(req.body.assistant);
 
-  let docId: string = '' // Set from res.id
-  let bookingData: BookingData = {
-    timeslot: req.body.timeslot,
-    assistant: req.body.assistant,
-    assistantType: assistantType,
-    bookedBy: userid,
+  let docId: string = ""; // Set from res.id
+  const bookingData: BookingData = {
+    timeslot:       req.body.timeslot,
+    assistant:      req.body.assistant,
+    assistantType:  assistantType,
+    bookedBy:       userid,
     bookedDatetime: (new Date()).toLocaleTimeString("sv-SE"),
-    comment: req.body.comment,
-    status: req.body.status, // Set initial status, but set to REQUESTED below if not
+    comment:        req.body.comment,
+    status:         req.body.status, // Set initial status, but set to REQUESTED below if not
   };
 
   // Timeslot validation
@@ -111,7 +110,7 @@ bookingRoute.post("/booking", async (req, res) => {
 
   // Authorization validation
   const isAdmin = await isUseridAdmin(userid);
-  if(isAdmin || await isUserForAssistant(userid, bookingData.assistant)) {
+  if (isAdmin || await isUserForAssistant(userid, bookingData.assistant)) {
     if (!isAdmin || !req.body.status) {
       // Bookings by Users or status is empty
       bookingData.status = BookingStatus.REQUESTED;
@@ -128,7 +127,7 @@ bookingRoute.post("/booking", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...bookingData
+    ...bookingData,
   });
 });
 
@@ -139,28 +138,18 @@ bookingRoute.put("/booking/:bookingid", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
-  let docId: string = req.params.bookingid
+  const docId: string = req.params.bookingid;
 
   // Fetch existing booking
   const bookingDoc = await bookingsCol.doc(docId).get();
   if (!bookingDoc.exists) {
     return res.status(400).send("Booking does not exists - " + docId);
   }
-  let bookingData: BookingData = bookingDoc.data()!;
-
-  // timeslot: string,       // NOT ALLOWED to change
-  // assistant: string,      // NOT ALLOWED to change
-  // assistantType: number,  // NOT ALLOWED to change
-  // bookedBy: string,       // NOT ALLOWED to change
-  // bookedDatetime: string, // NOT ALLOWED to change
-  // comment?: string,       // ALLOWED - Admin or isUserForAssistant
-  // status: string,         // ALLOWED - Admin or isUserForAssistant (only REMOVED)
-  // statusMessage?: string, // ALLOWED - Admin or isUserForAssistant (above)
+  const bookingData: BookingData = bookingDoc.data()!;
 
   // Authorization validation
   const isAdmin = await isUseridAdmin(userid);
   if (isAdmin || await isUserForAssistant(userid, bookingData.assistant)) {
-
     // ALLOWED - Admin or isUserForAssistant
     if (req.body.comment) { bookingData.comment = req.body.comment; }
 
@@ -206,7 +195,7 @@ bookingRoute.put("/booking/:bookingid", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...bookingData
+    ...bookingData,
   });
 });
 

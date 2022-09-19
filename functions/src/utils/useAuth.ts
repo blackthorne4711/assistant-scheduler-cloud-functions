@@ -1,9 +1,8 @@
 import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import * as express from "express";
-import {rolesCol} from '../utils/useDb'
-import {assistantsCol} from '../utils/useDb'
-import {AuthUser} from "../types/AuthUser"
+import {rolesCol, assistantsCol} from "../utils/useDb";
+import {AuthUser} from "../types/AuthUser";
 
 // Extending Express Request
 export interface RequestCustom extends express.Request
@@ -11,14 +10,15 @@ export interface RequestCustom extends express.Request
     decodedIdToken: admin.auth.DecodedIdToken ;
 }
 
-// Helper function
+// Helper function to get Userid from HTTP request
 export function getUserid(req: express.Request) {
   const reqCust = req as RequestCustom;
   return reqCust.decodedIdToken.email as string;
-};
+}
 
+// Helper function to check if user is Admin
 export async function isUseridAdmin(userid: string) {
-  let isAdmin: boolean = false;
+  let isAdmin = false;
 
   const singleRoleDocRef = rolesCol.doc(userid);
   const singleRoleDoc = await singleRoleDocRef.get();
@@ -31,8 +31,9 @@ export async function isUseridAdmin(userid: string) {
   return isAdmin;
 }
 
+// Helper function to check if user has authz for assistant
 export async function isUserForAssistant(userid: string, assistant: string) {
-  let isUserForAssistant: boolean = false;
+  let isUserForAssistant = false;
   const roleDoc = await rolesCol.doc(userid).get();
   const role = roleDoc.data();
 
@@ -49,8 +50,9 @@ export async function isUserForAssistant(userid: string, assistant: string) {
   return isUserForAssistant;
 }
 
+// Helper function to get Assistant type for an assistand id
 export async function getAssistantType(assistantid:string) {
-  let assistantType: number = -1;
+  let assistantType = -1;
   const assistantDoc = await assistantsCol.doc(assistantid).get();
   const assistant = assistantDoc.data();
 
@@ -61,91 +63,62 @@ export async function getAssistantType(assistantid:string) {
   return assistantType;
 }
 
-// UserRecord {'
-// id: 'IQVP024QoEh4Y9imPKJ2bbeNId53',
-// email: 'erik@stallhjalpen.se',
-// emailVerified: false,
-// displayName: undefined,
-// photoURL: undefined,
-// phoneNumber: undefined,
-// disabled: false,
-// metadata: UserMetadata {
-//   creationTime: 'Sat, 10 Sep 2022 11:47:08 GMT',
-//   lastSignInTime: null,
-//   lastRefreshTime: null
-// },
-// providerData: [
-//   UserInfo {
-//     uid: 'erik@stallhjalpen.se',
-//     displayName: undefined,
-//     email: 'erik@stallhjalpen.se',
-//     photoURL: undefined,
-//     providerId: 'password',
-//     phoneNumber: undefined
-//   }
-// ],
-// passwordHash: 'RqQdBGRI6biBVebQ6u9nIEzEVfrCSRJinrZV5uZaWlx5YhQjoRBp88jEgy1n61wHYgrmQPasCdkl6qpxch5H-A==',
-// passwordSalt: 'Nxk1L8AujKUe7Q==',
-// tokensValidAfterTime: 'Sat, 10 Sep 2022 11:47:08 GMT',
-// tenantId: undefined
-
+// Helper function to list Auth users (user from Firebase Auth)
 export async function listAuthUsers(): Promise<AuthUser[]> {
   return new Promise<AuthUser[]>((resolve, reject) => {
-    let authUserList: AuthUser[] = [];
+    const authUserList: AuthUser[] = [];
 
     admin.auth().listUsers(1000) // lists up to 1000 users
-    .then((listUsersResult) => {
-      for (let i = 0; i < listUsersResult.users.length; i++) {
-        const {uid, email, emailVerified, disabled } = listUsersResult.users[i];
-        authUserList.push({"uid": uid, "id": email!, "email": email!, "emailVerified": emailVerified!, "disabled": disabled! });
-      }
+      .then((listUsersResult) => {
+        for (let i = 0; i < listUsersResult.users.length; i++) {
+          const {uid, email, emailVerified, disabled} = listUsersResult.users[i];
+          authUserList.push({"uid": uid, "id": email!, "email": email!, "emailVerified": emailVerified!, "disabled": disabled!});
+        }
 
-      if (listUsersResult.pageToken) {
-        functions.logger.error("listAuthUsers() - OVER 1000 - " + listUsersResult.pageToken);
-      }
-
-      //console.log(authUserList);
-      resolve(authUserList);
-    })
-    .catch(function (error) {
-      functions.logger.error("listAuthUsers() - " + error.message);
-      reject(error);
-    });
+        if (listUsersResult.pageToken) {
+          functions.logger.error("listAuthUsers() - OVER 1000 - " + listUsersResult.pageToken);
+        }
+        resolve(authUserList);
+      })
+      .catch(function(error) {
+        functions.logger.error("listAuthUsers() - " + error.message);
+        reject(error);
+      });
   });
 }
 
 // TODO - create user
 // getAuth()
 //   .createUser({
-//     uid: 'some-uid',
-//     email: 'user@example.com',
-//     phoneNumber: '+11234567890',
+//     uid: "some-uid",
+//     email: "user@example.com",
+//     phoneNumber: "+11234567890",
 //   })
 //   .then((userRecord) => {
 //     // See the UserRecord reference doc for the contents of userRecord.
-//     console.log('Successfully created new user:', userRecord.uid);
+//     console.log("Successfully created new user:", userRecord.uid);
 //   })
 //   .catch((error) => {
-//     console.log('Error creating new user:', error);
+//     console.log("Error creating new user:", error);
 //   });
 
 // TODO - update user
 // getAuth()
 //   .updateUser(uid, {
-//     email: 'modifiedUser@example.com',
-//     phoneNumber: '+11234567890',
+//     email: "modifiedUser@example.com",
+//     phoneNumber: "+11234567890",
 //     emailVerified: true,
-//     password: 'newPassword',
-//     displayName: 'Jane Doe',
-//     photoURL: 'http://www.example.com/12345678/photo.png',
+//     password: "newPassword",
+//     displayName: "Jane Doe",
+//     photoURL: "http://www.example.com/12345678/photo.png",
 //     disabled: true,
 //   })
 //   .then((userRecord) => {
 //     // See the UserRecord reference doc for the contents of userRecord.
-//     console.log('Successfully updated user', userRecord.toJSON());
+//     console.log("Successfully updated user", userRecord.toJSON());
 //   })
 //   .catch((error) => {
-//     console.log('Error updating user:', error);
+//     console.log("Error updating user:", error);
 //   });
 
 // Express authentication middleware

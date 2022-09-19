@@ -1,16 +1,17 @@
-import {Router} from "express";
-import * as functions from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth"
-import {timeslotsCol} from '../utils/useDb'
-import {Timeslot, TimeslotData} from "../types/Timeslot"
+import {Router}                   from "express";
+import * as functions             from "firebase-functions";
+import {getUserid, isUseridAdmin} from "../utils/useAuth";
+import {timeslotsCol}             from "../utils/useDb";
+import {Timeslot, TimeslotData}   from "../types/Timeslot";
 
+/* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const timeslotRoute = Router();
 
 // -------------
 // GET TIMESLOT
 // -------------
 timeslotRoute.get("/timeslot/:timeslotid", async (req, res) => {
-  const docId: string = req.params.timeslotid
+  const docId: string = req.params.timeslotid;
 
   const timeslotDoc = await timeslotsCol.doc(docId).get();
   if (timeslotDoc.exists) {
@@ -26,7 +27,6 @@ timeslotRoute.get("/timeslot/:timeslotid", async (req, res) => {
 // ------------------
 timeslotRoute.get("/timeslots", async (req, res) => {
   const resTimeslots: Array<Timeslot>  = [];
-
   const timeslotDocs =
     await timeslotsCol.orderBy("startTime", "desc").get();
 
@@ -41,19 +41,15 @@ timeslotRoute.get("/timeslots", async (req, res) => {
 // GET ALL TIMESLOTS FOR PERIOD
 // -----------------------------
 timeslotRoute.get("/timeslots/period/:periodid", async (req, res) => {
-  const periodId: string = req.params.periodid
-
-  console.log(periodId)
-
+  const periodId:     string           = req.params.periodid;
   const resTimeslots: Array<Timeslot>  = [];
-
   const timeslotDocs =
-    await timeslotsCol.where('period', '==', periodId).orderBy("startTime", "desc").get();
+    await timeslotsCol.where("period", "==", periodId).orderBy("startTime", "desc").get();
 
   timeslotDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resTimeslots.push({ id: doc.id, ...doc.data() });
   });
-  
+
   return res.status(200).json(resTimeslots);
 });
 
@@ -69,11 +65,11 @@ timeslotRoute.post("/timeslot", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.date      ||
-     !req.body.startTime ||
-     !req.body.endTime   ||
-     !req.body.period    ||
-     !req.body.assistantSlots)
+  if (!req.body.date      ||
+      !req.body.startTime ||
+      !req.body.endTime   ||
+      !req.body.period    ||
+      !req.body.assistantSlots)
   {
     return res.status(400).send(
       "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"period\": ... \"assistantSlots\": [...] }");
@@ -81,8 +77,8 @@ timeslotRoute.post("/timeslot", async (req, res) => {
 
   // TODO - Unique constraint check?
 
-  let docId: string = '' // Set from res.id
-  let timeslotData: TimeslotData = {
+  let docId = ""; // Set from res.id
+  const timeslotData: TimeslotData = {
     date:           req.body.date,
     startTime:      req.body.startTime,
     endTime:        req.body.endTime,
@@ -103,7 +99,7 @@ timeslotRoute.post("/timeslot", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...timeslotData
+    ...timeslotData,
   });
 });
 
@@ -119,11 +115,11 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  if(!req.body.date      ||
-     !req.body.startTime ||
-     !req.body.endTime   ||
-     !req.body.period    ||
-     !req.body.assistantSlots)
+  if (!req.body.date      ||
+      !req.body.startTime ||
+      !req.body.endTime   ||
+      !req.body.period    ||
+      !req.body.assistantSlots)
   {
     return res.status(400).send(
       "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"period\": ... \"assistantSlots\": [...] }");
@@ -131,8 +127,8 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
 
   // TODO - Unique constraint check?
 
-  let docId: string = req.params.timeslotid
-  let timeslotData: TimeslotData = {
+  const docId: string = req.params.timeslotid;
+  const timeslotData: TimeslotData = {
   date:           req.body.date,
   startTime:      req.body.startTime,
   endTime:        req.body.endTime,
@@ -152,13 +148,13 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
 
   return res.status(200).json({
     id: docId,
-    ...timeslotData
+    ...timeslotData,
   });
 });
 
-// ---------------
-// DELETE TIMESLOT
-// ---------------
+// -------------
+// DELETE timeslot
+// -------------
 timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
   const docId: string = req.params.timeslotid;
 
@@ -169,7 +165,37 @@ timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
+  functions.logger.log("DELETE /timeslot/" + docId + " by " + userid);
   await timeslotsCol.doc(docId).delete();
+
+  return res.status(200).json({ });
+});
+
+// ---------------------
+// DELETE timeslot LIST
+// ---------------------
+timeslotRoute.delete("/timeslot", async (req, res) => {
+  const userid = getUserid(req);
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  const deltimeslotList: Array<Timeslot> = req.body.timeslotList;
+
+  if (!deltimeslotList) {
+    functions.logger.info("Incorrect body - " + req.body);
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { timeslotList: ... }");
+  }
+
+  functions.logger.log("DELETE /timeslot (list) by " + userid, deltimeslotList);
+
+  deltimeslotList.forEach( async (timeslot) =>  {
+    if (timeslot.id) {
+      await timeslotsCol.doc(timeslot.id).delete();
+    }
+  });
 
   return res.status(200).json({ });
 });
@@ -185,10 +211,10 @@ timeslotRoute.delete("/timeslots/schedule/:scheduleid", async (req, res) => {
   if (!isAdmin) { return res.status(403).json("Not allowed for non-admin"); }
 
   try {
-    var timeslotsRef = await timeslotsCol.where('fromSchedule', '==', scheduleid).get();
+    const timeslotsRef = await timeslotsCol.where("fromSchedule", "==", scheduleid).get();
     timeslotsRef.forEach((timeslot) => { timeslot.ref.delete(); });
   } catch (error) {
-    return res.status(500).json({ status: 'error', msg: 'Error deleting timeslots for schedule - ' + scheduleid, data: error, });
+    return res.status(500).json({ status: "error", msg: "Error deleting timeslots for schedule - " + scheduleid, data: error });
   }
 
   return res.status(200).json({ });
