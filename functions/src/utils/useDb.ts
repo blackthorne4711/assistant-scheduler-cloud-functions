@@ -18,20 +18,20 @@ const createCollection =
 
 // Import all your model types
 import {AssistantData} from "../types/Assistant";
-import {BookingData} from "../types/Booking";
-import {PeriodData} from "../types/Period";
-import {ProfileData} from "../types/Profile";
-import {RoleData} from "../types/Role";
-import {TimeslotData} from "../types/Timeslot";
-import {ScheduleData} from "../types/Schedule";
-import {AlertData} from "../types/Alert";
+import {BookingData}   from "../types/Booking";
+import {PeriodData}    from "../types/Period";
+import {ProfileData}   from "../types/Profile";
+import {RoleData}      from "../types/Role";
+import {TimeslotData}  from "../types/Timeslot";
+import {ScheduleData}  from "../types/Schedule";
+import {AlertData}     from "../types/Alert";
 
 // export all your collections
 export const assistantsCol = createCollection<AssistantData>("assistants");
-export const bookingsCol = createCollection<BookingData>("bookings");
-export const periodsCol = createCollection<PeriodData>("periods");
-export const profilesCol = createCollection<ProfileData>("profiles");
-export const rolesCol = createCollection<RoleData>("roles");
-export const timeslotsCol = createCollection<TimeslotData>("timeslots");
-export const schedulesCol = createCollection<ScheduleData>("schedules");
-export const alertsCol = createCollection<AlertData>("alerts");
+export const bookingsCol   = createCollection<BookingData>("bookings");
+export const periodsCol    = createCollection<PeriodData>("periods");
+export const profilesCol   = createCollection<ProfileData>("profiles");
+export const rolesCol      = createCollection<RoleData>("roles");
+export const timeslotsCol  = createCollection<TimeslotData>("timeslots");
+export const schedulesCol  = createCollection<ScheduleData>("schedules");
+export const alertsCol     = createCollection<AlertData>("alerts");

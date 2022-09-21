@@ -1,7 +1,7 @@
 export interface BookingData {
   timeslot:       string,
   assistant:      string,
-  assistantType:  number, // Denormalized to handle assistants changing type (booking will remain)
+  assistantType:  string, // Denormalized to handle assistants changing type (booking will remain)
   bookedBy:       string,
   bookedDatetime: string, // YYYY-MM-DD HH24:MM:SS
   comment?:       string, // I.e. for comment to Contact person

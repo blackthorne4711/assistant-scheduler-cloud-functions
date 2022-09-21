@@ -52,7 +52,7 @@ export async function isUserForAssistant(userid: string, assistant: string) {
 
 // Helper function to get Assistant type for an assistand id
 export async function getAssistantType(assistantid:string) {
-  let assistantType = -1;
+  let assistantType = "";
   const assistantDoc = await assistantsCol.doc(assistantid).get();
   const assistant = assistantDoc.data();
 

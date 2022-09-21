@@ -77,7 +77,7 @@ bookingRoute.post("/booking", async (req, res) => {
     assistant:      req.body.assistant,
     assistantType:  assistantType,
     bookedBy:       userid,
-    bookedDatetime: (new Date()).toLocaleTimeString("sv-SE"),
+    bookedDatetime: (new Date()).toLocaleString("sv-SE"),
     comment:        req.body.comment,
     status:         req.body.status, // Set initial status, but set to REQUESTED below if not
   };
