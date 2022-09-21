@@ -1,8 +1,9 @@
 import {Router}                   from "express";
 import * as functions             from "firebase-functions";
 import {getUserid, isUseridAdmin} from "../utils/useAuth";
-import {timeslotsCol}             from "../utils/useDb";
+import {timeslotsCol, periodsCol} from "../utils/useDb";
 import {Timeslot, TimeslotData}   from "../types/Timeslot";
+//import {Period}             from "../types/Period";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const timeslotRoute = Router();
@@ -51,6 +52,75 @@ timeslotRoute.get("/timeslots/period/:periodid", async (req, res) => {
   });
 
   return res.status(200).json(resTimeslots);
+});
+
+// -------------------------------------
+// GET ALL OPEN (AND CURRENT) TIMESLOTS 
+// -------------------------------------
+timeslotRoute.get("/timeslots/open", async (req, res) => {
+  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
+  //const openPeriodList: Array<Period>   = [];
+  const resTimeslots:   Array<Timeslot> = [];
+
+  for await (const period of periodDocs.docs) {
+    functions.logger.log("GET /timeslots/open - " + period.id + ' (' + (new Date()).toLocaleDateString("sv-SE") + ')');
+
+    const timeslotDocs = await timeslotsCol
+      .where("period", "==", period.id)
+      .where("date",   ">=", (new Date()).toLocaleDateString("sv-SE"))
+      .orderBy("date").get();
+
+    for await (const timeslot of timeslotDocs.docs) {
+      //functions.logger.log("(GET /timeslots/open) - timeslot - " + timeslot.id);
+      resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
+    }
+  }
+
+    // await Promise.all(timeslotDocs.docs.map(async (timeslot) => {
+    //   functions.logger.log("(GET /timeslots/open) - timeslot - " + timeslot.id);
+    //   resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
+    // }));
+ // }));
+
+
+  // for (const openPeriod of periodDocs.docs) {
+  //   functions.logger.log("GET /timeslots/open - " + openPeriod.id);
+  //   const timeslotDocs =
+  //       await timeslotsCol.where("period", "==", openPeriod.id).orderBy("from").get();
+  //   for (const openTimeslot of timeslotDocs.docs) {
+  //       functions.logger.log("(GET /timeslots/open) - timeslot - " + openTimeslot.id);
+  //       resTimeslots.push({ id: openTimeslot.id, ...openTimeslot.data() });
+  //     }
+  // }
+
+  // periodDocs.forEach((doc: FirebaseFirestore.DocumentData) =>  {
+  //   openPeriodList.push({ id: doc.id, ...doc.data() });
+  // });
+
+  // for (const openPeriod of openPeriodList) {
+  //   functions.logger.log("GET /timeslots/open - " + openPeriod.name + " (" + openPeriod.id + ')');
+  //   const timeslotDocs =
+  //       await timeslotsCol.where("period", "==", openPeriod.id).orderBy("from").get();
+  //   timeslotDocs.forEach((timeslot: FirebaseFirestore.DocumentData) => {
+  //       functions.logger.log("(GET /timeslots/open) - timeslot - " + timeslot.id);
+  //       resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
+  //     });
+  // }
+
+  functions.logger.log("GET /timeslots/open - DONE");
+
+  // openPeriodList.forEach( async (openPeriod: Period) => {
+  //   functions.logger.log("GET /timeslots/open - " + openPeriod.name + " (" + openPeriod.id + ')');
+  //   const timeslotDocs =
+  //       await timeslotsCol.where("period", "==", openPeriod.id).orderBy("from").get();
+  //   timeslotDocs.forEach((timeslot: FirebaseFirestore.DocumentData) => {
+  //       functions.logger.log("(GET /timeslots/open) - timeslot - " + timeslot.id);
+  //       resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
+  //     });
+  // })
+
+    return res.status(200).json(resTimeslots);
+
 });
 
 // -------------

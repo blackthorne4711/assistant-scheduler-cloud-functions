@@ -38,6 +38,24 @@ periodRoute.get("/periods", async (req, res) => {
   return res.status(200).json(resPeriods);
 });
 
+// ----------------------------
+// GET ALL PERIODS WITH STATUS
+// ----------------------------
+periodRoute.get("/periods/status/:status", async (req, res) => {
+  const status: string = req.params.status;
+
+  const resPeriods: Array<Period>  = [];
+
+  const periodDocs =
+    await periodsCol.where("status", "==", status).orderBy("from", "desc").get();
+
+  periodDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+    resPeriods.push({ id: doc.id, ...doc.data() });
+  });
+  
+  return res.status(200).json(resPeriods);
+});
+
 // -----------
 // POST PERIOD
 // -----------
