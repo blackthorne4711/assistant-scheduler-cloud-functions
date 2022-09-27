@@ -102,11 +102,13 @@ timeslotRoute.post("/timeslot", async (req, res) => {
 
   let docId = ""; // Set from res.id
   const timeslotData: TimeslotData = {
-    date:           req.body.date,
-    startTime:      req.body.startTime,
-    endTime:        req.body.endTime,
-    period:         req.body.period,
-    assistantSlots: req.body.assistantSlots,
+    date:                 req.body.date,
+    startTime:            req.body.startTime,
+    endTime:              req.body.endTime,
+    period:               req.body.period,
+    assistantSlots:       req.body.assistantSlots,
+    assistantAllocations: [],
+    acceptedBookings:     [],
   };
 
   if (req.body.fromSchedule)     { timeslotData.fromSchedule     = req.body.fromSchedule;     }
@@ -115,6 +117,11 @@ timeslotRoute.post("/timeslot", async (req, res) => {
   if (req.body.contact)          { timeslotData.contact          = req.body.contact;          }
   if (req.body.color)            { timeslotData.color            = req.body.color;            }
   if (req.body.type)             { timeslotData.type             = req.body.type;             }
+
+  // Init Assistant allocations to same array length as assistantSlots
+  for (var i = 0; i < timeslotData.assistantSlots.length; i++) {
+    timeslotData.assistantAllocations[i] = "0";
+  }
 
   functions.logger.log("POST /timeslot by " + userid, timeslotData);
   const docRes = await timeslotsCol.add(timeslotData);
@@ -152,11 +159,13 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
 
   const docId: string = req.params.timeslotid;
   const timeslotData: TimeslotData = {
-  date:           req.body.date,
-  startTime:      req.body.startTime,
-  endTime:        req.body.endTime,
-  period:         req.body.period,
-  assistantSlots: req.body.assistantSlots,
+    date:                 req.body.date,
+    startTime:            req.body.startTime,
+    endTime:              req.body.endTime,
+    period:               req.body.period,
+    assistantSlots:       req.body.assistantSlots,
+    assistantAllocations: [],
+    acceptedBookings:     [],
   };
 
   if (req.body.fromSchedule)     { timeslotData.fromSchedule     = req.body.fromSchedule;     }
@@ -167,7 +176,21 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   functions.logger.log("PUT /timeslot by " + userid, timeslotData);
-  await timeslotsCol.doc(docId).set(timeslotData);
+  //await timeslotsCol.doc(docId).set(timeslotData);
+  // Set everything EXCEPT assistantAllocations and acceptedBookings
+  await timeslotsCol.doc(docId).set({
+      date:             timeslotData.date,
+      startTime:        timeslotData.startTime,
+      endTime:          timeslotData.endTime,
+      period:           timeslotData.period,
+      assistantSlots:   timeslotData.assistantSlots,
+      fromSchedule:     timeslotData.fromSchedule,
+      fromScheduleName: timeslotData.fromScheduleName,
+      description:      timeslotData.description,
+      contact:          timeslotData.contact,
+      color:            timeslotData.color,
+      type:             timeslotData.type,
+    }, { merge: true });
 
   return res.status(200).json({
     id: docId,
