@@ -48,7 +48,7 @@ async function processBookingRequest(booking: Booking) {
     if (available) {
       // Update timeslot with allocation (and add booking id)
       if (!timeslot.assistantAllocations) { timeslot.assistantAllocations = []; }
-      timeslot.assistantAllocations[assistantTypeInt] = (allocatedSlotInt++).toString();
+      timeslot.assistantAllocations[assistantTypeInt] = (allocatedSlotInt+1).toString();
       if (!timeslot.acceptedBookings)     { timeslot.acceptedBookings     = []; }
       timeslot.acceptedBookings.push(booking.id);
       await timeslotsCol.doc(timeslot.id).set(timeslot as TimeslotData);
