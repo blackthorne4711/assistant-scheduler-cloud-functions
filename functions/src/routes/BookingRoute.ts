@@ -4,7 +4,7 @@ import {getUserid, isUseridAdmin, isUserForAssistant, getAssistantType} from "..
 import {bookingsCol, timeslotsCol, periodsCol}                          from "../utils/useDb";
 import {Booking, BookingData, BookingStatus}                            from "../types/Booking";
 import {PeriodStatus}                                                   from "../types/Period";
-import {Timeslot, TimeslotData}                                         from "../types/Timeslot"
+import {Timeslot, TimeslotData}                                         from "../types/Timeslot";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const bookingRoute = Router();
@@ -13,7 +13,6 @@ const bookingRoute = Router();
 // BOOKING PROCESSING
 // ------------------
 async function processBookingRequest(booking: Booking) {
-
   const timeslotId  = booking.timeslot;
   const timeslotDoc = await timeslotsCol.doc(timeslotId).get();
   if (timeslotDoc.exists) {
@@ -38,7 +37,7 @@ async function processBookingRequest(booking: Booking) {
         // No previous allocation array
         // Initialize array with "0" to match assistantSlots
         timeslot.assistantAllocations = [];
-        for (var i = 0; i < timeslot.assistantSlots.length; i++) {
+        for (let i = 0; i < timeslot.assistantSlots.length; i++) {
           timeslot.assistantAllocations[i] = "0";
         }
         // Available slot (since previous check - available slot > 0)
@@ -51,7 +50,7 @@ async function processBookingRequest(booking: Booking) {
       if (!timeslot.assistantAllocations) { timeslot.assistantAllocations = []; }
       timeslot.assistantAllocations[assistantTypeInt] = (allocatedSlotInt++).toString();
       if (!timeslot.acceptedBookings)     { timeslot.acceptedBookings     = []; }
-      timeslot.acceptedBookings.push(booking.id)
+      timeslot.acceptedBookings.push(booking.id);
       await timeslotsCol.doc(timeslot.id).set(timeslot as TimeslotData);
 
       // Update booking with status ACCEPTED
@@ -63,7 +62,6 @@ async function processBookingRequest(booking: Booking) {
       booking.statusMessage = "No available assistant slots (" + booking.assistantType + ")";
       await bookingsCol.doc(booking.id).set(booking as BookingData);
     }
-
   } else {
     // Reject booking with (internal) error message
     functions.logger.error("Timeslot not found in processBookingRequest (" + booking.timeslot + ")");
@@ -74,7 +72,6 @@ async function processBookingRequest(booking: Booking) {
 }
 
 async function processBookingRemoval(booking: Booking) {
-
   const timeslotId  = booking.timeslot;
   const timeslotDoc = await timeslotsCol.doc(timeslotId).get();
   if (timeslotDoc.exists) {
@@ -102,8 +99,7 @@ async function processBookingRemoval(booking: Booking) {
       await bookingsCol.doc(booking.id).set(booking as BookingData);
     } else {
       // No previous allocation array - Just remove booking
-      functions.logger.error("Allocation array not found in processBookingRemoval ("
-        + booking.timeslot + ")");
+      functions.logger.error("Allocation array not found in processBookingRemoval (" + booking.timeslot + ")");
       booking.status = BookingStatus.REMOVED;
       await bookingsCol.doc(booking.id).set(booking as BookingData);
     }

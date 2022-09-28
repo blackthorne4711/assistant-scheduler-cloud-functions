@@ -119,7 +119,7 @@ timeslotRoute.post("/timeslot", async (req, res) => {
   if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   // Init Assistant allocations to same array length as assistantSlots
-  for (var i = 0; i < timeslotData.assistantSlots.length; i++) {
+  for (let i = 0; i < timeslotData.assistantSlots.length; i++) {
     timeslotData.assistantAllocations[i] = "0";
   }
 
@@ -176,7 +176,7 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   functions.logger.log("PUT /timeslot by " + userid, timeslotData);
-  //await timeslotsCol.doc(docId).set(timeslotData);
+  // await timeslotsCol.doc(docId).set(timeslotData);
   // Set everything EXCEPT assistantAllocations and acceptedBookings
   await timeslotsCol.doc(docId).set({
       date:             timeslotData.date,
