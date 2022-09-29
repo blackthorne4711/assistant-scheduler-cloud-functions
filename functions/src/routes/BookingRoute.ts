@@ -1,10 +1,11 @@
-import {Router}                                                         from "express";
-import * as functions                                                   from "firebase-functions";
-import {getUserid, isUseridAdmin, isUserForAssistant, getAssistantType} from "../utils/useAuth";
-import {bookingsCol, timeslotsCol, periodsCol}                          from "../utils/useDb";
-import {Booking, BookingData, BookingStatus}                            from "../types/Booking";
-import {PeriodStatus}                                                   from "../types/Period";
-import {Timeslot, TimeslotData}                                         from "../types/Timeslot";
+import {Router}                                               from "express";
+import * as functions                                         from "firebase-functions";
+import {getUserid, isUseridAdmin, isUserForAssistant}         from "../utils/useAuth";
+import {bookingsCol, timeslotsCol, periodsCol, assistantsCol} from "../utils/useDb";
+import {Booking, BookingData, BookingStatus}                  from "../types/Booking";
+import {PeriodStatus}                                         from "../types/Period";
+import {Timeslot, TimeslotData}                               from "../types/Timeslot";
+import {getAssistantsForUser}                                 from "../routes/UserRoute";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const bookingRoute = Router();
@@ -69,8 +70,9 @@ async function processBookingRequest(booking: Booking) {
     booking.statusMessage = "Internal error, timeslot not found (" + booking.timeslot + ")";
     await bookingsCol.doc(booking.id).set(booking as BookingData);
   }
+  return booking.status;
 }
-
+ 
 async function processBookingRemoval(booking: Booking) {
   const timeslotId  = booking.timeslot;
   const timeslotDoc = await timeslotsCol.doc(timeslotId).get();
@@ -141,6 +143,30 @@ bookingRoute.get("/bookings", async (req, res) => {
   return res.status(200).json(resBookings);
 });
 
+// ---------------------------------------------------------------------
+// GET ALL USER BOOKINGS (i.e. for assistants for user and current dates)
+// ---------------------------------------------------------------------
+bookingRoute.get("/bookings/user", async (req, res) => {
+  const userid     = getUserid(req);
+  const assistants = await getAssistantsForUser(userid);
+
+  const resBookings: Array<Booking>  = [];
+
+  // Loop through users assistants
+  for (let i = 0; i < assistants.length; i++) {
+    functions.logger.log("GET /bookings/user - assistant - " + assistants[i]);
+    const bookingDocs =
+      await bookingsCol.where("timeslotDate", ">=", (new Date()).toLocaleDateString("sv-SE")).where("assistant", "==", assistants[i]).get();
+
+    bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+      functions.logger.log("GET /bookings/user - booking - " + assistants[i]);
+      resBookings.push({ id: doc.id, ...doc.data() });
+    });
+  }
+  
+  return res.status(200).json(resBookings);
+});
+
 // ------------------------------
 // GET ALL BOOKINGS FOR TIMESLOT
 // ------------------------------
@@ -171,17 +197,17 @@ bookingRoute.post("/booking", async (req, res) => {
     return res.status(400).send("Incorrect body.\n Correct syntax is: { timeslot: ..., assistant: ..., ... }");
   }
 
-  const assistantType = await getAssistantType(req.body.assistant);
-
   let docId: string = ""; // Set from res.id
   const bookingData: BookingData = {
     timeslot:       req.body.timeslot,
+    timeslotDate:   "", // TO BE UPDATED
+    timeslotTime:   "", // TO BE UPDATED
     assistant:      req.body.assistant,
-    assistantType:  assistantType,
+    assistantType:  "", // TO BE UPDATED
     bookedBy:       userid,
     bookedDatetime: (new Date()).toLocaleString("sv-SE"),
     comment:        req.body.comment,
-    status:         req.body.status, // Set initial status, but set to REQUESTED below if not
+    status:         BookingStatus.REQUESTED, // TODO - Possibly allow Admin to set other status? 
   };
 
   // Timeslot validation
@@ -210,27 +236,28 @@ bookingRoute.post("/booking", async (req, res) => {
     return res.status(406).json("Period is not open");
   }
 
+  // Assistant validation
+  const assistant = await assistantsCol.doc(bookingData.assistant).get();
+  if (!assistant.exists) {
+    return res.status(500).json("Assistant not found");
+  }
+  const assistantData = assistant.data();
+
+  // Set (additional) booking data
+  bookingData.timeslotDate  = timeslotData.date;
+  bookingData.timeslotTime  = timeslotData.startTime + " " + timeslotData.endTime;
+  bookingData.assistantType = assistantData ? assistantData.type : "";
+  
   // Authorization validation
   const isAdmin = await isUseridAdmin(userid);
   if (isAdmin || await isUserForAssistant(userid, bookingData.assistant)) {
-    // TODO - Possibly allow Admin to set other status? How to handle processing with regards to slots availability?
-    // if (!isAdmin || !req.body.status) {
-    //   // Bookings by Users or status is empty - STATUS = REQUESTED
-    //   bookingData.status = BookingStatus.REQUESTED;
-    // }
-    // FOR NOW - only set to REQUESTED and process as normal
-    bookingData.status = BookingStatus.REQUESTED;
-
-    functions.logger.log("Booking by " + userid + " for " + bookingData.assistant +
-        "(" + bookingData.status + ")", 
-      bookingData);
+    functions.logger.log("Booking by " + userid + " for " + bookingData.assistant + "(" + bookingData.status + ")", bookingData);
     const docRes = await bookingsCol.add(bookingData);
     docId = docRes.id;
 
     // PROCESS BOOKING
-    processBookingRequest({id: docId, ...bookingData});
+    await processBookingRequest({id: docId, ...bookingData});
     // TODO - get feedback on booking processing
-    // FOR NOW - let process be separate async
   } else {
     return res.status(403).json("Not allowed (not user for assistant, and not admin)");
   }
@@ -315,6 +342,5 @@ bookingRoute.put("/booking/:bookingid", async (req, res) => {
     ...bookingData,
   });
 });
-
 
 export {bookingRoute};

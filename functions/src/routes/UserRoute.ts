@@ -12,6 +12,21 @@ import {Profile}                from "../types/Profile";
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const userRoute = Router();
 
+// ----------------------------------------------
+// Helper function to get assistants for user id
+// ----------------------------------------------
+export async function getAssistantsForUser(userid: string) {
+  let userForAssistants: Array<string> = [];
+
+  const roleDoc = await rolesCol.doc(userid).get();
+  if (roleDoc.exists) {
+      const roleData: RoleData = roleDoc.data()!;
+      userForAssistants = roleData.userForAssistants;
+  }
+
+  return userForAssistants;
+}
+
 // ------------------
 // GET (current) USER
 // ------------------

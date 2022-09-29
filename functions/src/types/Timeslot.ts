@@ -18,3 +18,14 @@ export interface TimeslotData {
 export interface Timeslot extends TimeslotData {
   id: string
 }
+
+export const EMPTY_TIMESLOT = {
+  id:                   "",
+  date:                 "",
+  startTime:            "",
+  endTime:              "",
+  period:               "",
+  assistantSlots:       [],
+  assistantAllocations: [],
+  acceptedBookings:     [],
+};

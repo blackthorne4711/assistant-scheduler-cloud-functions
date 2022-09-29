@@ -19,6 +19,20 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "assistant",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timeslotDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "bookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
           "fieldPath": "timeslot",
           "order": "ASCENDING"
         },

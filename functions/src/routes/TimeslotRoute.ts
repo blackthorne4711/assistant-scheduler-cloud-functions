@@ -1,11 +1,26 @@
-import {Router}                   from "express";
-import * as functions             from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth";
-import {timeslotsCol, periodsCol} from "../utils/useDb";
-import {Timeslot, TimeslotData}   from "../types/Timeslot";
+import {Router}                                 from "express";
+import * as functions                           from "firebase-functions";
+import {getUserid, isUseridAdmin}               from "../utils/useAuth";
+import {timeslotsCol, periodsCol}               from "../utils/useDb";
+import {Timeslot, TimeslotData, EMPTY_TIMESLOT} from "../types/Timeslot";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const timeslotRoute = Router();
+
+// -----------------------------------------------
+// Helper function to get timeslot for timeslot id
+// -----------------------------------------------
+export async function getTimeslot(timeslotid: string) {
+  let timeslot: Timeslot = EMPTY_TIMESLOT;
+
+  const timeslotDoc = await timeslotsCol.doc(timeslotid).get();
+  if (timeslotDoc.exists) {
+    const timeslotData: TimeslotData = timeslotDoc.data()!;
+    timeslot = { id: timeslotid, ...timeslotData };
+  }
+
+  return timeslot;
+}
 
 // -------------
 // GET TIMESLOT

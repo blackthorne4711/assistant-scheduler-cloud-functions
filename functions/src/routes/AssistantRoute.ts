@@ -1,11 +1,26 @@
-import {Router}                   from "express";
-import * as functions             from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth";
-import {assistantsCol}            from "../utils/useDb";
-import {Assistant, AssistantData} from "../types/Assistant";
+import {Router}                                    from "express";
+import * as functions                              from "firebase-functions";
+import {getUserid, isUseridAdmin}                  from "../utils/useAuth";
+import {assistantsCol}                             from "../utils/useDb";
+import {Assistant, AssistantData, EMPTY_ASSISTANT} from "../types/Assistant";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const assistantRoute = Router();
+
+// -----------------------------------------------
+// Helper function to get assistant for assistant id
+// -----------------------------------------------
+export async function getAssistant(assistantid: string) {
+  let assistant: Assistant = EMPTY_ASSISTANT;
+
+  const assistantDoc = await assistantsCol.doc(assistantid).get();
+  if (assistantDoc.exists) {
+    const assistantData: AssistantData = assistantDoc.data()!;
+    assistant = { id: assistantid, ...assistantData };
+  }
+
+  return assistant;
+}
 
 // -------------
 // GET ASSISTANT
@@ -59,6 +74,7 @@ assistantRoute.post("/assistant", async (req, res) => {
   const assistantData: AssistantData = {
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
+    fullname:  req.body.firstname + " " + req.body.lastname,
     type:      req.body.type,
   };
 
@@ -96,6 +112,7 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
   const assistantData: AssistantData = {
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
+    fullname:  req.body.firstname + " " + req.body.lastname,
     type:      req.body.type,
   };
 
