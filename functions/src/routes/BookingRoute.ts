@@ -7,6 +7,9 @@ import {PeriodStatus}                                         from "../types/Per
 import {Timeslot, TimeslotData}                               from "../types/Timeslot";
 import {getAssistantsForUser}                                 from "../routes/UserRoute";
 
+// Import helper functions
+import { getWeekday } from "../utils/helperfunctions";
+
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const bookingRoute = Router();
 
@@ -167,6 +170,22 @@ bookingRoute.get("/bookings/user", async (req, res) => {
   return res.status(200).json(resBookings);
 });
 
+// -----------------------------
+// GET ALL BOOKINGS FOR PERIOD
+// -----------------------------
+bookingRoute.get("/bookings/period/:periodid", async (req, res) => {
+  const periodId:     string           = req.params.periodid;
+  const resBookings: Array<Booking>  = [];
+  const bookingDocs =
+    await bookingsCol.where("timeslotPeriod", "==", periodId).get();
+
+  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+    resBookings.push({ id: doc.id, ...doc.data() });
+  });
+
+  return res.status(200).json(resBookings);
+});
+
 // ------------------------------
 // GET ALL BOOKINGS FOR TIMESLOT
 // ------------------------------
@@ -184,6 +203,29 @@ bookingRoute.get("/bookings/timeslot/:timeslotid", async (req, res) => {
   return res.status(200).json(resBookings);
 });
 
+// -------------------------------------
+// GET ALL OPEN (AND CURRENT) BOOKINGS 
+// -------------------------------------
+bookingRoute.get("/bookings/open", async (req, res) => {
+  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
+  const resBookings:   Array<Booking> = [];
+
+  for await (const period of periodDocs.docs) {
+    functions.logger.log("GET /bookings/open - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
+
+    const bookingDocs = await bookingsCol
+      .where("timeslotPeriod", "==", period.id)
+      .where("timeslotDate",   ">=", (new Date()).toLocaleDateString("sv-SE")).get();
+
+    for await (const booking of bookingDocs.docs) {
+      resBookings.push({ id: booking.id, ...booking.data() });
+    }
+  }
+
+  return res.status(200).json(resBookings);
+});
+
+
 // -------------
 // POST BOOKING
 // -------------
@@ -199,15 +241,17 @@ bookingRoute.post("/booking", async (req, res) => {
 
   let docId: string = ""; // Set from res.id
   const bookingData: BookingData = {
-    timeslot:       req.body.timeslot,
-    timeslotDate:   "", // TO BE UPDATED
-    timeslotTime:   "", // TO BE UPDATED
-    assistant:      req.body.assistant,
-    assistantType:  "", // TO BE UPDATED
-    bookedBy:       userid,
-    bookedDatetime: (new Date()).toLocaleString("sv-SE"),
-    comment:        req.body.comment,
-    status:         BookingStatus.REQUESTED, // TODO - Possibly allow Admin to set other status? 
+    timeslot:        req.body.timeslot,
+    timeslotDate:    "", // TO BE UPDATED
+    timeslotWeekday: "", // TO BE UPDATED
+    timeslotTime:    "", // TO BE UPDATED
+    timeslotPeriod:  "", // TO BE UPDATED
+    assistant:       req.body.assistant,
+    assistantType:   "", // TO BE UPDATED
+    bookedBy:        userid,
+    bookedDatetime:  (new Date()).toLocaleString("sv-SE"),
+    comment:         req.body.comment,
+    status:          BookingStatus.REQUESTED, // TODO - Possibly allow Admin to set other status? 
   };
 
   // Timeslot validation
@@ -244,9 +288,12 @@ bookingRoute.post("/booking", async (req, res) => {
   const assistantData = assistant.data();
 
   // Set (additional) booking data
-  bookingData.timeslotDate  = timeslotData.date;
-  bookingData.timeslotTime  = timeslotData.startTime + " " + timeslotData.endTime;
-  bookingData.assistantType = assistantData ? assistantData.type : "";
+  bookingData.timeslotDate    = timeslotData.date;
+  bookingData.timeslotWeekday = getWeekday(timeslotData.date);
+  bookingData.timeslotTime    = timeslotData.startTime + " " + timeslotData.endTime;
+  bookingData.timeslotPeriod  = timeslotData.period;
+  bookingData.assistantType   = assistantData ? assistantData.type : "";
+
   
   // Authorization validation
   const isAdmin = await isUseridAdmin(userid);

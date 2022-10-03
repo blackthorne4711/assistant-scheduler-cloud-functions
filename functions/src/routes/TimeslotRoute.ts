@@ -1,8 +1,11 @@
 import {Router}                                 from "express";
 import * as functions                           from "firebase-functions";
 import {getUserid, isUseridAdmin}               from "../utils/useAuth";
-import {timeslotsCol, periodsCol}               from "../utils/useDb";
+import {timeslotsCol, periodsCol, bookingsCol}  from "../utils/useDb";
 import {Timeslot, TimeslotData, EMPTY_TIMESLOT} from "../types/Timeslot";
+
+// Import helper functions
+import { getWeekday } from "../utils/helperfunctions";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const timeslotRoute = Router();
@@ -206,6 +209,20 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
       color:            timeslotData.color,
       type:             timeslotData.type,
     }, { merge: true });
+
+  // UPDATE BOOKINGS
+  // timeslotDate    = timeslotData.date;
+  // timeslotWeekday = getWeekday(timeslotData.date);
+  // timeslotTime    = timeslotData.startTime + " " + timeslotData.endTime;
+  const bookingDocs = await bookingsCol.where("timeslot", "==", docId).get();
+
+  for await (const booking of bookingDocs.docs) {
+    await bookingsCol.doc(booking.id).set({
+        timeslotDate:    timeslotData.date,
+        timeslotWeekday: getWeekday(timeslotData.date),
+        timeslotTime:    timeslotData.startTime + " " + timeslotData.endTime,
+      }, { merge: true });
+  }
 
   return res.status(200).json({
     id: docId,
