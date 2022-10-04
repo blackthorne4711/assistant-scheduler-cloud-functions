@@ -24,8 +24,8 @@ profileRoute.get("/profile", async (req, res) => {
     await profilesCol.doc(userid).get();
   if (docRes.exists) {
     docEmail = docRes.data().email;
-    docFirstName = docRes.data().firstName;
-    docLastName = docRes.data().lastName;
+    docFirstName = docRes.data().firstname;
+    docLastName = docRes.data().lastname;
     docRole = "USER";
 
     if (await isUseridAdmin(userid)) {
