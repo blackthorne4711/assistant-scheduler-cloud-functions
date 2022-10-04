@@ -125,7 +125,7 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
 
   for await (const booking of bookingDocs.docs) {
     await bookingsCol.doc(booking.id).set({
-        assistantFullname: assistantData.fullname
+        assistantFullname: assistantData.fullname,
       }, { merge: true });
   }
 

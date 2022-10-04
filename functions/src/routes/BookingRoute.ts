@@ -292,7 +292,7 @@ bookingRoute.post("/booking", async (req, res) => {
   // Set (additional) booking data
   bookingData.timeslotDate      = timeslotData.date;
   bookingData.timeslotWeekday   = getWeekday(timeslotData.date);
-  bookingData.timeslotTime      = timeslotData.startTime + " " + timeslotData.endTime;
+  bookingData.timeslotTime      = timeslotData.startTime + " - " + timeslotData.endTime;
   bookingData.timeslotColor     = timeslotData.color ? timeslotData.color : "";
   bookingData.timeslotPeriod    = timeslotData.period;
   bookingData.assistantType     = assistantData ? assistantData.type : "";

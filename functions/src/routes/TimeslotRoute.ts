@@ -225,8 +225,8 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
     await bookingsCol.doc(booking.id).set({
         timeslotDate:    timeslotData.date,
         timeslotWeekday: getWeekday(timeslotData.date),
-        timeslotTime:    timeslotData.startTime + " " + timeslotData.endTime,
-        timeslotColor:   timeslotData.color
+        timeslotTime:    timeslotData.startTime + " - " + timeslotData.endTime,
+        timeslotColor:   timeslotData.color,
       }, { merge: true });
   }
 
