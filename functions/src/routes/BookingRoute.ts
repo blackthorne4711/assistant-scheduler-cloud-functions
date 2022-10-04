@@ -241,17 +241,19 @@ bookingRoute.post("/booking", async (req, res) => {
 
   let docId: string = ""; // Set from res.id
   const bookingData: BookingData = {
-    timeslot:        req.body.timeslot,
-    timeslotDate:    "", // TO BE UPDATED
-    timeslotWeekday: "", // TO BE UPDATED
-    timeslotTime:    "", // TO BE UPDATED
-    timeslotPeriod:  "", // TO BE UPDATED
-    assistant:       req.body.assistant,
-    assistantType:   "", // TO BE UPDATED
-    bookedBy:        userid,
-    bookedDatetime:  (new Date()).toLocaleString("sv-SE"),
-    comment:         req.body.comment,
-    status:          BookingStatus.REQUESTED, // TODO - Possibly allow Admin to set other status? 
+    timeslot:          req.body.timeslot,
+    timeslotDate:      "", // TO BE UPDATED
+    timeslotWeekday:   "", // TO BE UPDATED
+    timeslotTime:      "", // TO BE UPDATED
+    timeslotColor:     "", // TO BE UPDATED
+    timeslotPeriod:    "", // TO BE UPDATED
+    assistant:         req.body.assistant,
+    assistantType:     "", // TO BE UPDATED
+    assistantFullname: "", // TO BE UPDATED
+    bookedBy:          userid,
+    bookedDatetime:    (new Date()).toLocaleString("sv-SE"),
+    comment:           req.body.comment,
+    status:            BookingStatus.REQUESTED, // TODO - Possibly allow Admin to set other status? 
   };
 
   // Timeslot validation
@@ -288,12 +290,13 @@ bookingRoute.post("/booking", async (req, res) => {
   const assistantData = assistant.data();
 
   // Set (additional) booking data
-  bookingData.timeslotDate    = timeslotData.date;
-  bookingData.timeslotWeekday = getWeekday(timeslotData.date);
-  bookingData.timeslotTime    = timeslotData.startTime + " " + timeslotData.endTime;
-  bookingData.timeslotPeriod  = timeslotData.period;
-  bookingData.assistantType   = assistantData ? assistantData.type : "";
-
+  bookingData.timeslotDate      = timeslotData.date;
+  bookingData.timeslotWeekday   = getWeekday(timeslotData.date);
+  bookingData.timeslotTime      = timeslotData.startTime + " " + timeslotData.endTime;
+  bookingData.timeslotColor     = timeslotData.color ? timeslotData.color : "";
+  bookingData.timeslotPeriod    = timeslotData.period;
+  bookingData.assistantType     = assistantData ? assistantData.type : "";
+  bookingData.assistantFullname = assistantData ? assistantData.fullname : "";
   
   // Authorization validation
   const isAdmin = await isUseridAdmin(userid);
@@ -375,6 +378,9 @@ bookingRoute.put("/booking/:bookingid", async (req, res) => {
   if (periodData.status != PeriodStatus.OPEN) {
     return res.status(406).json("Period is not open");
   }
+
+  bookingData.updatedBy       = userid;
+  bookingData.updatedDatetime = (new Date()).toLocaleString("sv-SE");
 
   // UPDATE BOOKING
   await bookingsCol.doc(docId).set(bookingData);

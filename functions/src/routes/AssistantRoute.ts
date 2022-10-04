@@ -1,7 +1,7 @@
 import {Router}                                    from "express";
 import * as functions                              from "firebase-functions";
 import {getUserid, isUseridAdmin}                  from "../utils/useAuth";
-import {assistantsCol}                             from "../utils/useDb";
+import {assistantsCol, bookingsCol}                from "../utils/useDb";
 import {Assistant, AssistantData, EMPTY_ASSISTANT} from "../types/Assistant";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
@@ -118,6 +118,16 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
 
   functions.logger.log("POST /assistant by " + userid, assistantData);
   await assistantsCol.doc(docId).set(assistantData);
+
+  // UPDATE BOOKINGS
+  // Only update fullname (leave type as denormalized form time of booking)
+  const bookingDocs = await bookingsCol.where("assistant", "==", docId).get();
+
+  for await (const booking of bookingDocs.docs) {
+    await bookingsCol.doc(booking.id).set({
+        assistantFullname: assistantData.fullname
+      }, { merge: true });
+  }
 
   return res.status(200).json({
     id: docId,

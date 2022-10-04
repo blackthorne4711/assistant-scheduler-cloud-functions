@@ -109,11 +109,12 @@ timeslotRoute.post("/timeslot", async (req, res) => {
   if (!req.body.date      ||
       !req.body.startTime ||
       !req.body.endTime   ||
+      !req.body.color     ||
       !req.body.period    ||
       !req.body.assistantSlots)
   {
     return res.status(400).send(
-      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"period\": ... \"assistantSlots\": [...] }");
+      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"color\": ..., \"period\": ..., \"assistantSlots\": [...] }");
   }
 
   // TODO - Unique constraint check?
@@ -121,8 +122,10 @@ timeslotRoute.post("/timeslot", async (req, res) => {
   let docId = ""; // Set from res.id
   const timeslotData: TimeslotData = {
     date:                 req.body.date,
+    weekday:              getWeekday(req.body.date),
     startTime:            req.body.startTime,
     endTime:              req.body.endTime,
+    color:                req.body.color,
     period:               req.body.period,
     assistantSlots:       req.body.assistantSlots,
     assistantAllocations: [],
@@ -133,7 +136,6 @@ timeslotRoute.post("/timeslot", async (req, res) => {
   if (req.body.fromScheduleName) { timeslotData.fromScheduleName = req.body.fromScheduleName; }
   if (req.body.description)      { timeslotData.description      = req.body.description;      }
   if (req.body.contact)          { timeslotData.contact          = req.body.contact;          }
-  if (req.body.color)            { timeslotData.color            = req.body.color;            }
   if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   // Init Assistant allocations to same array length as assistantSlots
@@ -166,11 +168,12 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   if (!req.body.date      ||
       !req.body.startTime ||
       !req.body.endTime   ||
+      !req.body.color     ||
       !req.body.period    ||
       !req.body.assistantSlots)
   {
     return res.status(400).send(
-      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"period\": ... \"assistantSlots\": [...] }");
+      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"color\": ..., \"period\": ..., \"assistantSlots\": [...] }");
   }
 
   // TODO - Unique constraint check?
@@ -178,8 +181,10 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   const docId: string = req.params.timeslotid;
   const timeslotData: TimeslotData = {
     date:                 req.body.date,
+    weekday:              getWeekday(req.body.date),
     startTime:            req.body.startTime,
     endTime:              req.body.endTime,
+    color:                req.body.color,
     period:               req.body.period,
     assistantSlots:       req.body.assistantSlots,
     assistantAllocations: [],
@@ -190,7 +195,6 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   if (req.body.fromScheduleName) { timeslotData.fromScheduleName = req.body.fromScheduleName; }
   if (req.body.description)      { timeslotData.description      = req.body.description;      }
   if (req.body.contact)          { timeslotData.contact          = req.body.contact;          }
-  if (req.body.color)            { timeslotData.color            = req.body.color;            }
   if (req.body.type)             { timeslotData.type             = req.body.type;             }
 
   functions.logger.log("PUT /timeslot by " + userid, timeslotData);
@@ -198,6 +202,7 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
   // Set everything EXCEPT assistantAllocations and acceptedBookings
   await timeslotsCol.doc(docId).set({
       date:             timeslotData.date,
+      weekday:          timeslotData.weekday,
       startTime:        timeslotData.startTime,
       endTime:          timeslotData.endTime,
       period:           timeslotData.period,
@@ -221,6 +226,7 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
         timeslotDate:    timeslotData.date,
         timeslotWeekday: getWeekday(timeslotData.date),
         timeslotTime:    timeslotData.startTime + " " + timeslotData.endTime,
+        timeslotColor:   timeslotData.color
       }, { merge: true });
   }
 
