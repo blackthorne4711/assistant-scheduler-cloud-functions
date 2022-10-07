@@ -1,13 +1,18 @@
 import {Router} from "express";
 import * as functions from "firebase-functions";
 // Auth
-import {getUserid, isUseridAdmin, listAuthUsers} from "../utils/useAuth";
-import {AuthUser}                                from "../types/AuthUser";
-import {AuthUserRoleProfile}                     from "../types/AuthUserRoleProfile";
+import {getUserid,
+        isUseridAdmin,
+        listAuthUsers,
+        getAuthUser,
+        createAuthUser,
+        setAuthUserPassword} from "../utils/useAuth";
+import {AuthUser}            from "../types/AuthUser";
+import {AuthUserRoleProfile} from "../types/AuthUserRoleProfile";
 // DB
 import {rolesCol, profilesCol}  from "../utils/useDb";
 import {Role, RoleData}         from "../types/Role";
-import {Profile}                from "../types/Profile";
+import {Profile, ProfileData}   from "../types/Profile";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const userRoute = Router();
@@ -97,40 +102,147 @@ userRoute.get("/users", async (req, res) => {
 // --------
 // PUT USER
 // --------
-userRoute.put("/user/:userid", async (req, res) => {
+userRoute.put("/user/:uid", async (req, res) => {
   const currentuserid = getUserid(req);
-  const userid = req.params.userid;
+  const uid = req.params.uid;
+
+  // CHECK IF ADMIN
+  const isAdmin: boolean = await isUseridAdmin(currentuserid);
+  if (!isAdmin) {
+    functions.logger.error("PUT /user - not allowed - " + currentuserid + ' ' + uid);
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  // CHECK INPUT
+  if (!req.body.firstname ||
+      !req.body.lastname  ||
+      !req.body.admin     ||
+      !req.body.userForAssistants) {
+      return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., admin: ..., userForAssistants [ ... ] }");
+  }
+
+  // GET AUTH USER (NO UPDATE)
+  const authUser: AuthUser = await getAuthUser(uid)
+  const email = authUser.email;
+
+  // UPDATE PROFILE
+  const profileData: ProfileData = {
+    email:     email,
+    firstname: req.body.firstname,
+    lastname:  req.body.lastname,
+  };
+  functions.logger.log("PUT /user by " + email, profileData);
+  await profilesCol.doc(email).set(profileData);
+
+  // UPDATE ROLE
+  const roleData: RoleData = {
+      admin:             req.body.admin == "true" ? true : false,
+      userForAssistants: req.body.userForAssistants,
+  };
+  functions.logger.log("PUT /user by " + email, roleData);
+  await rolesCol.doc(email).set(roleData);
+
+  return res.status(200).json({
+    id: uid,
+    ...profileData,
+    ...roleData,
+  });
+});
+
+// ---------
+// POST USER
+// ---------
+userRoute.post("/user", async (req, res) => {
+  const currentuserid = getUserid(req);
+  let   uid = '';
 
   // CHECK IF ADMIN
   const isAdmin: boolean = await isUseridAdmin(currentuserid);
   if (!isAdmin) {
     functions.logger.error("PUT /user - not allowed - " + currentuserid);
-      return res.status(403).json("Not allowed for non-admin");
+    return res.status(403).json("Not allowed for non-admin");
   }
-
-  functions.logger.log("PUT /user - " + req.body.admin + " - " + req.body.userForAssistants);
 
   // CHECK INPUT
-  if (!("admin" in req.body) ||
-      !("userForAssistants" in req.body)) {
-      return res.status(400).send("Incorrect body.\n Correct syntax is: { admin: ..., userForAssistants [ ... ] }");
+  if (!req.body.email     ||
+      !req.body.password  ||
+      !req.body.firstname ||
+      !req.body.lastname  ||
+      !req.body.userForAssistants) {
+      return res.status(400).send("Incorrect body.\n Correct syntax is: { email: ..., password: ..., firstname: ..., lastname: ..., userForAssistants [ ... ] }");
   }
 
-  const docId:    string   = req.params.userid;
+  // CREATE AUTH USER
+  const email    = req.body.email;
+  const password = req.body.password;
+  const fullname = req.body.firstname + ' ' + req.body.lastname;
+  await createAuthUser(email, password, fullname)
+    .then((_uid) => {
+      uid = _uid;
+      functions.logger.info("Successfully created new user", uid)
+    })
+    .catch((error) => {
+      functions.logger.error("Error creating new user", error);
+      return res.status(500).json({ status: "error", msg: "Error creating new user - " + currentuserid, data: error });
+    });
+
+  // UPDATE PROFILE
+  const profileData: ProfileData = {
+    email:     email,
+    firstname: req.body.firstname,
+    lastname:  req.body.lastname,
+  };
+  functions.logger.info("POST /user by " + currentuserid, profileData);
+  await profilesCol.doc(email).set(profileData);
+
+  // UPDATE ROLE
   const roleData: RoleData = {
-      admin: req.body.admin,
+      admin:             !!req.body.admin,
       userForAssistants: req.body.userForAssistants,
   };
+  functions.logger.info("POST /user by " + currentuserid, roleData);
+  await rolesCol.doc(email).set(roleData);
 
-    functions.logger.log("PUT /user by " + userid, roleData);
-    await rolesCol.doc(userid).set(roleData);
-
-    return res.status(200).json({
-      id: docId,
-      ...roleData,
-    });
+  return res.status(200).json({
+    id: uid,
+    ...profileData,
+    ...roleData,
+  });  
 });
 
-// TODO POST USER
+// --------
+// POST SET PASSWORD
+// --------
+userRoute.post("/user/:uid/password", async (req, res) => {
+  const currentuserid = getUserid(req);
+  const uid = req.params.uid;
+
+  // CHECK IF ADMIN
+  const isAdmin: boolean = await isUseridAdmin(currentuserid);
+  if (!isAdmin) {
+    functions.logger.error("POST /user/:userid/password - not allowed - " + currentuserid);
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  // CHECK INPUT
+  if (!req.body.password) {
+      return res.status(400).send("Incorrect body.\n Correct syntax is: { password: ... }");
+  }
+
+  // SET AUTH USER PASSWORD
+  const password = req.body.password;
+  await setAuthUserPassword(uid, password)
+    .then((_uid) => {
+      functions.logger.info("Successfully set new password", _uid)
+    })
+    .catch((error) => {
+      functions.logger.error("Error setting password", error);
+      return res.status(500).json({ status: "error", msg: "Error creating new user - " + uid, data: error });
+    });
+
+  return res.status(200).json({
+    id: uid,
+  });  
+});
 
 export {userRoute};

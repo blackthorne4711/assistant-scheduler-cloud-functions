@@ -87,39 +87,55 @@ export async function listAuthUsers(): Promise<AuthUser[]> {
   });
 }
 
-// TODO - create user
-// getAuth()
-//   .createUser({
-//     uid: "some-uid",
-//     email: "user@example.com",
-//     phoneNumber: "+11234567890",
-//   })
-//   .then((userRecord) => {
-//     // See the UserRecord reference doc for the contents of userRecord.
-//     console.log("Successfully created new user:", userRecord.uid);
-//   })
-//   .catch((error) => {
-//     console.log("Error creating new user:", error);
-//   });
+// Helper function to get an Auth user from uid (user from Firebase Auth)
+export async function getAuthUser(uid: string): Promise<AuthUser> {
+  return new Promise<AuthUser>((resolve, reject) => {
 
-// TODO - update user
-// getAuth()
-//   .updateUser(uid, {
-//     email: "modifiedUser@example.com",
-//     phoneNumber: "+11234567890",
-//     emailVerified: true,
-//     password: "newPassword",
-//     displayName: "Jane Doe",
-//     photoURL: "http://www.example.com/12345678/photo.png",
-//     disabled: true,
-//   })
-//   .then((userRecord) => {
-//     // See the UserRecord reference doc for the contents of userRecord.
-//     console.log("Successfully updated user", userRecord.toJSON());
-//   })
-//   .catch((error) => {
-//     console.log("Error updating user:", error);
-//   });
+    admin.auth().getUser(uid)
+      .then((userResult) => {
+        const {uid, email, emailVerified, disabled} = userResult;
+        resolve({"uid": uid, "id": email!, "email": email!, "emailVerified": emailVerified!, "disabled": disabled!})
+      })
+      .catch(function(error) {
+        functions.logger.error("getAuthUser() - " + error.message);
+        reject(error);
+      });
+  });
+}
+
+export async function createAuthUser(email: string, password: string, fullname: string): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    admin.auth().createUser({
+        email:         email,
+        emailVerified: false,
+        password:      password,
+        displayName:   fullname,
+        disabled:      false,
+      })
+      .then((userResult) => {
+        const uid = userResult.uid;
+        resolve(uid)
+      })
+      .catch(function(error) {
+        reject(error);
+      });
+  });
+}
+
+export async function setAuthUserPassword(uid: string, password: string): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    admin.auth().updateUser(uid, {
+        password:      password,
+      })
+      .then((userResult) => {
+        const uid = userResult.uid;
+        resolve(uid)
+      })
+      .catch(function(error) {
+        reject(error);
+      });
+  });
+}
 
 // Express authentication middleware
 export const authenticate = async (
