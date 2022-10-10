@@ -90,11 +90,10 @@ export async function listAuthUsers(): Promise<AuthUser[]> {
 // Helper function to get an Auth user from uid (user from Firebase Auth)
 export async function getAuthUser(uid: string): Promise<AuthUser> {
   return new Promise<AuthUser>((resolve, reject) => {
-
     admin.auth().getUser(uid)
       .then((userResult) => {
         const {uid, email, emailVerified, disabled} = userResult;
-        resolve({"uid": uid, "id": email!, "email": email!, "emailVerified": emailVerified!, "disabled": disabled!})
+        resolve({"uid": uid, "id": email!, "email": email!, "emailVerified": emailVerified!, "disabled": disabled!});
       })
       .catch(function(error) {
         functions.logger.error("getAuthUser() - " + error.message);
@@ -114,7 +113,7 @@ export async function createAuthUser(email: string, password: string, fullname: 
       })
       .then((userResult) => {
         const uid = userResult.uid;
-        resolve(uid)
+        resolve(uid);
       })
       .catch(function(error) {
         reject(error);
@@ -129,7 +128,7 @@ export async function setAuthUserPassword(uid: string, password: string): Promis
       })
       .then((userResult) => {
         const uid = userResult.uid;
-        resolve(uid)
+        resolve(uid);
       })
       .catch(function(error) {
         reject(error);

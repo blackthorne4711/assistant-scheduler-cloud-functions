@@ -109,7 +109,7 @@ userRoute.put("/user/:uid", async (req, res) => {
   // CHECK IF ADMIN
   const isAdmin: boolean = await isUseridAdmin(currentuserid);
   if (!isAdmin) {
-    functions.logger.error("PUT /user - not allowed - " + currentuserid + ' ' + uid);
+    functions.logger.error("PUT /user - not allowed - " + currentuserid + " " + uid);
     return res.status(403).json("Not allowed for non-admin");
   }
 
@@ -122,7 +122,7 @@ userRoute.put("/user/:uid", async (req, res) => {
   }
 
   // GET AUTH USER (NO UPDATE)
-  const authUser: AuthUser = await getAuthUser(uid)
+  const authUser: AuthUser = await getAuthUser(uid);
   const email = authUser.email;
 
   // UPDATE PROFILE
@@ -154,7 +154,7 @@ userRoute.put("/user/:uid", async (req, res) => {
 // ---------
 userRoute.post("/user", async (req, res) => {
   const currentuserid = getUserid(req);
-  let   uid = '';
+  let   uid = "";
 
   // CHECK IF ADMIN
   const isAdmin: boolean = await isUseridAdmin(currentuserid);
@@ -175,11 +175,11 @@ userRoute.post("/user", async (req, res) => {
   // CREATE AUTH USER
   const email    = req.body.email;
   const password = req.body.password;
-  const fullname = req.body.firstname + ' ' + req.body.lastname;
+  const fullname = req.body.firstname + " " + req.body.lastname;
   await createAuthUser(email, password, fullname)
     .then((_uid) => {
       uid = _uid;
-      functions.logger.info("Successfully created new user", uid)
+      functions.logger.info("Successfully created new user", uid);
     })
     .catch((error) => {
       functions.logger.error("Error creating new user", error);
@@ -233,7 +233,7 @@ userRoute.post("/user/:uid/password", async (req, res) => {
   const password = req.body.password;
   await setAuthUserPassword(uid, password)
     .then((_uid) => {
-      functions.logger.info("Successfully set new password", _uid)
+      functions.logger.info("Successfully set new password", _uid);
     })
     .catch((error) => {
       functions.logger.error("Error setting password", error);
