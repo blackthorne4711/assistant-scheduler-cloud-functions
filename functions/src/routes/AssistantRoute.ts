@@ -75,6 +75,7 @@ assistantRoute.post("/assistant", async (req, res) => {
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
     fullname:  req.body.firstname + " " + req.body.lastname,
+    phone:     req.body.phone ? req.body.phone : "",
     type:      req.body.type,
   };
 
@@ -113,10 +114,11 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
     fullname:  req.body.firstname + " " + req.body.lastname,
+    phone:     req.body.phone ? req.body.phone : "",
     type:      req.body.type,
   };
 
-  functions.logger.log("POST /assistant by " + userid, assistantData);
+  functions.logger.log("PUT /assistant by " + userid, assistantData);
   await assistantsCol.doc(docId).set(assistantData);
 
   // UPDATE BOOKINGS
@@ -135,5 +137,22 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
   });
 });
 
+// ---------------
+// DELETE ASSISTANT
+// ---------------
+assistantRoute.delete("/assistant/:assistantid", async (req, res) => {
+  // TODO - error handling in getUserid
+  const userid = getUserid(req);
+  const assistantid = req.params.assistantid;
+
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  if (!isAdmin) {
+    return res.status(403).json("Not allowed for non-admin");
+  }
+
+  functions.logger.log("DELETE /assistant by " + userid, assistantid);
+  await assistantsCol.doc(assistantid).delete();
+  return res.status(200).json();
+});
 
 export {assistantRoute};

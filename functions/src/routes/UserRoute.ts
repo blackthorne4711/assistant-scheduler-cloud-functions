@@ -6,13 +6,16 @@ import {getUserid,
         listAuthUsers,
         getAuthUser,
         createAuthUser,
+        deleteAuthUser,
+        setAuthUserDisabled,
         setAuthUserPassword} from "../utils/useAuth";
 import {AuthUser}            from "../types/AuthUser";
 import {AuthUserRoleProfile} from "../types/AuthUserRoleProfile";
 // DB
-import {rolesCol, profilesCol}  from "../utils/useDb";
-import {Role, RoleData}         from "../types/Role";
-import {Profile, ProfileData}   from "../types/Profile";
+import {rolesCol, profilesCol, assistantsCol} from "../utils/useDb";
+import {Role, RoleData}           from "../types/Role";
+import {Profile, ProfileData}     from "../types/Profile";
+import {Assistant}                from "../types/Assistant";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const userRoute = Router();
@@ -61,6 +64,8 @@ userRoute.get("/users", async (req, res) => {
   const resRoles:                Array<Role>                = [];
   const resProfiles:             Array<Profile>             = [];
   const resAuthUserRoleProfiles: Array<AuthUserRoleProfile> = [];
+  // For Assistant fullname (for search)
+  const resAssistants:           Array<Assistant>           = [];
 
   resAuthUsers = await listAuthUsers();
 
@@ -74,25 +79,42 @@ userRoute.get("/users", async (req, res) => {
       resProfiles.push({ id: doc.id, ...doc.data() });
   });
 
+  const assistantDocs = await assistantsCol.get();
+  assistantDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+      resAssistants.push({ id: doc.id, ...doc.data() });
+  });
+
   for (let i=0; i < resAuthUsers.length; i++) {
+    const userForAssistantsFullname = [] as Array<string>;
     const matchingRole = resRoles.find((x) => x.id === resAuthUsers[i].id);
     const matchingProfile = resProfiles.find((x) => x.id === resAuthUsers[i].id);
 
+    if (matchingRole) {
+      for (let j=0; j < matchingRole.userForAssistants.length; j++) {
+        const matchingAssistant = resAssistants.find((x) => x.id === matchingRole.userForAssistants[j]);
+        userForAssistantsFullname[j] = matchingAssistant ? matchingAssistant.fullname : "";
+      }
+    }
+    
     if (matchingRole && matchingProfile) {
       resAuthUserRoleProfiles.push({
           ...resAuthUsers[i],
           "admin":             matchingRole.admin,
           "userForAssistants": matchingRole.userForAssistants,
+          "userForAssistantsFullname": userForAssistantsFullname,
           "firstname":         matchingProfile.firstname,
           "lastname":          matchingProfile.lastname,
+          "phone":             matchingProfile.phone,
         });
     } else if (matchingRole) {
       resAuthUserRoleProfiles.push({
           ...resAuthUsers[i],
           "admin":             matchingRole.admin,
           "userForAssistants": matchingRole.userForAssistants,
+          "userForAssistantsFullname": userForAssistantsFullname,
           "firstname":         "",
           "lastname":          "",
+          "phone":             "",
         });
     }
   }
@@ -116,9 +138,8 @@ userRoute.put("/user/:uid", async (req, res) => {
   // CHECK INPUT
   if (!req.body.firstname ||
       !req.body.lastname  ||
-      !req.body.admin     ||
       !req.body.userForAssistants) {
-      return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., admin: ..., userForAssistants [ ... ] }");
+      return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., userForAssistants [ ... ] }");
   }
 
   // GET AUTH USER (NO UPDATE)
@@ -130,13 +151,14 @@ userRoute.put("/user/:uid", async (req, res) => {
     email:     email,
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
+    phone:     req.body.phone ? req.body.phone : "",
   };
   functions.logger.log("PUT /user by " + email, profileData);
   await profilesCol.doc(email).set(profileData);
 
   // UPDATE ROLE
   const roleData: RoleData = {
-      admin:             req.body.admin == "true" ? true : false,
+      admin:             !!req.body.admin,
       userForAssistants: req.body.userForAssistants,
   };
   functions.logger.log("PUT /user by " + email, roleData);
@@ -186,16 +208,17 @@ userRoute.post("/user", async (req, res) => {
       return res.status(500).json({ status: "error", msg: "Error creating new user - " + currentuserid, data: error });
     });
 
-  // UPDATE PROFILE
+  // SET PROFILE
   const profileData: ProfileData = {
     email:     email,
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
+    phone:     req.body.phone ? req.body.phone : "",
   };
   functions.logger.info("POST /user by " + currentuserid, profileData);
   await profilesCol.doc(email).set(profileData);
 
-  // UPDATE ROLE
+  // SET ROLE
   const roleData: RoleData = {
       admin:             !!req.body.admin,
       userForAssistants: req.body.userForAssistants,
@@ -213,22 +236,19 @@ userRoute.post("/user", async (req, res) => {
 // --------
 // POST SET PASSWORD
 // --------
-userRoute.post("/user/:uid/password", async (req, res) => {
+userRoute.put("/user/:uid/password", async (req, res) => {
   const currentuserid = getUserid(req);
   const uid = req.params.uid;
-
   // CHECK IF ADMIN
   const isAdmin: boolean = await isUseridAdmin(currentuserid);
   if (!isAdmin) {
-    functions.logger.error("POST /user/:userid/password - not allowed - " + currentuserid);
+    functions.logger.error("POST /user/:uid/password - not allowed - " + currentuserid);
     return res.status(403).json("Not allowed for non-admin");
   }
-
   // CHECK INPUT
   if (!req.body.password) {
       return res.status(400).send("Incorrect body.\n Correct syntax is: { password: ... }");
   }
-
   // SET AUTH USER PASSWORD
   const password = req.body.password;
   await setAuthUserPassword(uid, password)
@@ -237,12 +257,69 @@ userRoute.post("/user/:uid/password", async (req, res) => {
     })
     .catch((error) => {
       functions.logger.error("Error setting password", error);
-      return res.status(500).json({ status: "error", msg: "Error creating new user - " + uid, data: error });
+      return res.status(500).json({ status: "error", msg: "Error setting password - " + uid, data: error });
     });
-
   return res.status(200).json({
     id: uid,
   });  
+});
+
+// --------
+// PUT SET DISABLED
+// --------
+userRoute.put("/user/:uid/disabled", async (req, res) => {
+  const currentuserid = getUserid(req);
+  const uid = req.params.uid;
+  // CHECK IF ADMIN
+  const isAdmin: boolean = await isUseridAdmin(currentuserid);
+  if (!isAdmin) {
+    functions.logger.error("POST /user/:uid/disabled - not allowed - " + currentuserid);
+    return res.status(403).json("Not allowed for non-admin");
+  }
+  // SET AUTH USER DISABLED
+  const disabled = !!req.body.disabled;
+  await setAuthUserDisabled(uid, disabled)
+    .then((_uid) => {
+      functions.logger.info("Successfully set disabled (" + disabled + ")", _uid);
+    })
+    .catch((error) => {
+      functions.logger.error("Error setting disabled", error);
+      return res.status(500).json({ status: "error", msg: "Error setting disabled - " + uid, data: error });
+    });
+  return res.status(200).json({
+    id: uid,
+  });  
+});
+
+// -----------------------------
+// DELETE USER (+Role & Profile)
+// -----------------------------
+userRoute.delete("/user/:uid", async (req, res) => {
+  const currentuserid = getUserid(req);
+  const uid = req.params.uid;
+  // CHECK IF ADMIN
+  const isAdmin: boolean = await isUseridAdmin(currentuserid);
+  if (!isAdmin) {
+    functions.logger.error("DELETE /user/:uid - not allowed - " + currentuserid);
+    return res.status(403).json("Not allowed for non-admin");
+  }
+  // GET AUTH USER EMAIL
+  const authUser: AuthUser = await getAuthUser(uid);
+  const email = authUser.email;
+  // DELETE AUTH USER
+  await deleteAuthUser(uid)
+    .then((_uid) => {
+      functions.logger.info("Successfully deleted user (" + email + ")", _uid);
+      // DELETE PROFILE
+      profilesCol.doc(email).delete();
+      // DELETE ROLE
+      rolesCol.doc(email).delete();
+    })
+    .catch((error) => {
+      functions.logger.error("Error setting disabled", error);
+      return res.status(500).json({ status: "error", msg: "Error setting disabled - " + uid, data: error });
+    });
+  return res.status(200).json();  
 });
 
 export {userRoute};

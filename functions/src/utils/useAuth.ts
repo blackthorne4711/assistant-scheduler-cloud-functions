@@ -121,6 +121,28 @@ export async function createAuthUser(email: string, password: string, fullname: 
   });
 }
 
+export async function setAuthUserDisabled(uid: string, disabled: boolean): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    admin.auth().updateUser(uid, {
+      disabled: disabled,
+    }).then(() => {
+      resolve(uid);
+    }).catch((error) => {
+      reject(error);
+    });
+  });
+}
+
+export async function deleteAuthUser(uid: string): Promise<string> {
+  return new Promise<string>((resolve, reject) => {
+    admin.auth().deleteUser(uid).then(() => {
+      resolve(uid);
+    }).catch((error) => {
+      reject(error);
+    });
+  });
+}
+
 export async function setAuthUserPassword(uid: string, password: string): Promise<string> {
   return new Promise<string>((resolve, reject) => {
     admin.auth().updateUser(uid, {

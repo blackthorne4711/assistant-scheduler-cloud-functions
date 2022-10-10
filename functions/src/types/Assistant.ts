@@ -2,6 +2,7 @@ export interface AssistantData {
   firstname: string,
   lastname:  string,
   fullname:  string, // Concatenation of firstname + " " + lastname for easy of use
+  phone:     string,
   type:      string
 }
 
@@ -14,5 +15,6 @@ export const EMPTY_ASSISTANT = {
   firstname: "",
   lastname:  "",
   fullname:  "",
+  phone:     "",
   type:      "",
 };

@@ -2,7 +2,7 @@ import * as functions             from "firebase-functions";
 import {Router}                   from "express";
 import {getUserid, isUseridAdmin} from "../utils/useAuth";
 import {profilesCol}              from "../utils/useDb";
-import {Profile, ProfileData}     from "../types/Profile";
+import {Profile, ProfileData, EMPTY_PROFILE} from "../types/Profile";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const profileRoute = Router();
@@ -14,36 +14,16 @@ profileRoute.get("/profile", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
-  const docId:      string = userid;
-  let docEmail:     string = "";
-  let docFirstName: string = "";
-  let docLastName:  string = "";
-  let docRole:      string = "";
-
-  const docRes: FirebaseFirestore.DocumentData =
-    await profilesCol.doc(userid).get();
-  if (docRes.exists) {
-    docEmail = docRes.data().email;
-    docFirstName = docRes.data().firstname;
-    docLastName = docRes.data().lastname;
-    docRole = "USER";
-
-    if (await isUseridAdmin(userid)) {
-      docRole = "ADMIN";
-    }
+  let profile: Profile = EMPTY_PROFILE;
+  const profileDoc = await profilesCol.doc(userid).get();
+  if (profileDoc.exists) {
+    const profileData: ProfileData = profileDoc.data()!;
+    profile = { id: userid, ...profileData };
   }
-
   // TODO - Maybe add handling if no doc found?
+  // res.header("Access-Control-Allow-Origin", "*");
 
-  res.header("Access-Control-Allow-Origin", "*");
-
-  return res.status(200).json({
-    id: docId,
-    email: docEmail,
-    firstname: docFirstName,
-    lastname: docLastName,
-    role: docRole,
-  });
+  return res.status(200).json(profile);
 });
 
 // ---------------------------------------------
@@ -52,27 +32,15 @@ profileRoute.get("/profile", async (req, res) => {
 profileRoute.get("/profile/:userid", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = req.params.userid;
-  const docId:      string = userid;
-  let docEmail:     string = "";
-  let docFirstName: string = "";
-  let docLastName:  string = "";
 
-  const docRes: FirebaseFirestore.DocumentData =
-    await profilesCol.doc(userid).get();
-  if (docRes.exists) {
-    docEmail = docRes.data().email;
-    docFirstName = docRes.data().firstName;
-    docLastName = docRes.data().lastName;
+  let profile: Profile = EMPTY_PROFILE;
+  const profileDoc = await profilesCol.doc(userid).get();
+  if (profileDoc.exists) {
+    const profileData: ProfileData = profileDoc.data()!;
+    profile = { id: userid, ...profileData };
   }
 
-  // TODO - Maybe add handling if no doc found?
-
-  return res.status(200).json({
-    id: docId,
-    email: docEmail,
-    firstname: docFirstName,
-    lastname: docLastName,
-  });
+  return res.status(200).json(profile);
 });
 
 // -------------------------------
@@ -113,6 +81,7 @@ profileRoute.post("/profile", async (req, res) => {
     email:     req.body.email,
     firstname: req.body.firstname,
     lastname:  req.body.lastname,
+    phone:     req.body.phone ? req.body.phone : "",
   };
 
   // TODO - Checks on strings?
