@@ -76,7 +76,7 @@ async function processBookingRequest(booking: Booking) {
   return booking.status;
 }
  
-async function processBookingRemoval(booking: Booking) {
+export async function processBookingRemoval(booking: Booking) {
   const timeslotId  = booking.timeslot;
   const timeslotDoc = await timeslotsCol.doc(timeslotId).get();
   if (timeslotDoc.exists) {

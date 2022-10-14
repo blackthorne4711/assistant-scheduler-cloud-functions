@@ -81,7 +81,7 @@ userRoute.get("/users", async (req, res) => {
 
   const assistantDocs = await assistantsCol.get();
   assistantDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-      resAssistants.push({ id: doc.id, ...doc.data() });
+    resAssistants.push({ id: doc.id, ...doc.data() });
   });
 
   for (let i=0; i < resAuthUsers.length; i++) {

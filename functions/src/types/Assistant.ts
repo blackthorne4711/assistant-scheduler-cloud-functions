@@ -3,7 +3,8 @@ export interface AssistantData {
   lastname:  string,
   fullname:  string, // Concatenation of firstname + " " + lastname for easy of use
   phone:     string,
-  type:      string
+  type:      string,
+  disabled:  boolean,
 }
 
 export interface Assistant extends AssistantData {
@@ -17,4 +18,5 @@ export const EMPTY_ASSISTANT = {
   fullname:  "",
   phone:     "",
   type:      "",
+  disabled:  false,
 };
