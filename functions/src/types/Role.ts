@@ -1,5 +1,6 @@
 export interface RoleData {
-  admin: boolean,
+  admin:   boolean,
+  trainer: boolean,
   userForAssistants: Array<string>
 }
 

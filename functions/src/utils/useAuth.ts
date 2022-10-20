@@ -31,6 +31,21 @@ export async function isUseridAdmin(userid: string) {
   return isAdmin;
 }
 
+// Helper function to check if user is Trainer
+export async function isUseridTrainer(userid: string) {
+  let isTrainer = false;
+
+  const singleRoleDocRef = rolesCol.doc(userid);
+  const singleRoleDoc = await singleRoleDocRef.get();
+  const singleRole = singleRoleDoc.data();
+
+  if (singleRole) {
+    isTrainer = singleRole.trainer;
+  }
+
+  return isTrainer;
+}
+
 // Helper function to check if user has authz for assistant
 export async function isUserForAssistant(userid: string, assistant: string) {
   let isUserForAssistant = false;

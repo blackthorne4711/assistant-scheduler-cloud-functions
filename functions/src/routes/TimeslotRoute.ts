@@ -94,6 +94,39 @@ timeslotRoute.get("/timeslots/open", async (req, res) => {
   return res.status(200).json(resTimeslots);
 });
 
+// ----------------------------------------------
+// GET OPEN (AND CURRENT) TIMESLOTS, UP TO X DAYS
+// ----------------------------------------------
+timeslotRoute.get("/timeslots/open/:days", async (req, res) => {
+  const days: number = parseInt(req.params.days);
+  const today = new Date();
+  const maxday = new Date();
+  maxday.setDate(maxday.getDate() + days);
+
+  if (days == NaN || days < 0) {
+    return res.status(400).send("Incorrect parameter (days) - " + req.params.days);
+  }
+
+  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
+  const resTimeslots:   Array<Timeslot> = [];
+
+  for await (const period of periodDocs.docs) {
+    functions.logger.log("GET /timeslots/open/" + days + " - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
+
+    const timeslotDocs = await timeslotsCol
+      .where("period", "==", period.id)
+      .where("date",   ">=", today.toLocaleDateString("sv-SE"))
+      .where("date",   "<=", maxday.toLocaleDateString("sv-SE")) // UP TO X DAYS
+      .orderBy("date").get();
+
+    for await (const timeslot of timeslotDocs.docs) {
+      resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
+    }
+  }
+
+  return res.status(200).json(resTimeslots);
+});
+
 // -------------
 // POST TIMESLOT
 // -------------

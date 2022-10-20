@@ -3,6 +3,7 @@ import * as functions from "firebase-functions";
 // Auth
 import {getUserid,
         isUseridAdmin,
+        isUseridTrainer,
         listAuthUsers,
         getAuthUser,
         createAuthUser,
@@ -55,10 +56,11 @@ userRoute.get("/user", async (req, res) => {
 userRoute.get("/users", async (req, res) => {
   const userid = getUserid(req);
 
-  const isAdmin: boolean = await isUseridAdmin(userid);
-  if (!isAdmin) {
+  const isAdmin:   boolean = await isUseridAdmin(userid);
+  const isTrainer: boolean = await isUseridTrainer(userid);
+  if (!isAdmin && !isTrainer) {
     functions.logger.error("GET /users - not allowed - " + userid);
-      return res.status(403).json("Not allowed for non-admin");
+      return res.status(403).json("Not allowed for non-(admin/trainer)");
   }
   let   resAuthUsers:            Array<AuthUser>            = [];
   const resRoles:                Array<Role>                = [];
@@ -100,6 +102,7 @@ userRoute.get("/users", async (req, res) => {
       resAuthUserRoleProfiles.push({
           ...resAuthUsers[i],
           "admin":             matchingRole.admin,
+          "trainer":           matchingRole.trainer,
           "userForAssistants": matchingRole.userForAssistants,
           "userForAssistantsFullname": userForAssistantsFullname,
           "firstname":         matchingProfile.firstname,
@@ -110,6 +113,7 @@ userRoute.get("/users", async (req, res) => {
       resAuthUserRoleProfiles.push({
           ...resAuthUsers[i],
           "admin":             matchingRole.admin,
+          "trainer":           matchingRole.trainer,
           "userForAssistants": matchingRole.userForAssistants,
           "userForAssistantsFullname": userForAssistantsFullname,
           "firstname":         "",
@@ -159,6 +163,7 @@ userRoute.put("/user/:uid", async (req, res) => {
   // UPDATE ROLE
   const roleData: RoleData = {
       admin:             !!req.body.admin,
+      trainer:           !!req.body.trainer,
       userForAssistants: req.body.userForAssistants,
   };
   functions.logger.log("PUT /user by " + email, roleData);
@@ -221,6 +226,7 @@ userRoute.post("/user", async (req, res) => {
   // SET ROLE
   const roleData: RoleData = {
       admin:             !!req.body.admin,
+      trainer:           !!req.body.trainer,
       userForAssistants: req.body.userForAssistants,
   };
   functions.logger.info("POST /user by " + currentuserid, roleData);

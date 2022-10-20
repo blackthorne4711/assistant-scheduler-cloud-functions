@@ -1,6 +1,9 @@
 import {Router}                                               from "express";
 import * as functions                                         from "firebase-functions";
-import {getUserid, isUseridAdmin, isUserForAssistant}         from "../utils/useAuth";
+import {getUserid,
+        isUseridAdmin,
+        isUseridTrainer,
+        isUserForAssistant}                                   from "../utils/useAuth";
 import {bookingsCol, timeslotsCol, periodsCol, assistantsCol} from "../utils/useDb";
 import {Booking, BookingData, BookingStatus}                  from "../types/Booking";
 import {PeriodStatus}                                         from "../types/Period";
@@ -139,6 +142,30 @@ bookingRoute.get("/bookings", async (req, res) => {
   const bookingDocs =
     await bookingsCol.orderBy("timeslot").orderBy("assistant").get();
 
+  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+    resBookings.push({ id: doc.id, ...doc.data() });
+  });
+  
+  return res.status(200).json(resBookings);
+});
+
+// ---------------------------------------------------------------------
+// GET ALL UPCOMING BOOKINGS (current and future bookings)
+// ---------------------------------------------------------------------
+bookingRoute.get("/bookings/upcoming", async (req, res) => {
+  const userid = getUserid(req);
+
+  // CHECK IF ADMIN
+  const isAdmin: boolean = await isUseridAdmin(userid);
+  const isTrainer: boolean = await isUseridTrainer(userid);
+
+  if (!isAdmin && !isTrainer) {
+    functions.logger.error("GET /bookings/upcoming - not allowed - " + userid);
+    return res.status(403).json("Not allowed for non-(admin/trainer)");
+  }
+
+  const resBookings: Array<Booking>  = [];
+  const bookingDocs = await bookingsCol.where("timeslotDate", ">=", (new Date()).toLocaleDateString("sv-SE")).get();
   bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     resBookings.push({ id: doc.id, ...doc.data() });
   });
