@@ -312,16 +312,19 @@ timeslotRoute.delete("/timeslot", async (req, res) => {
 
   functions.logger.log("DELETE /timeslot (list) by " + userid, deltimeslotList);
 
+  // DELETE BOOKINGS
   deltimeslotList.forEach( async (timeslot) =>  {
     if (timeslot.id) {
-      // DELETE BOOKINGS
       const bookingsRef = await bookingsCol.where("timeslot", "==", timeslot.id).get();
       bookingsRef.forEach((booking) => { booking.ref.delete(); });
-  
-      await timeslotsCol.doc(timeslot.id).delete();
     }
   });
 
+  // DELETE TIMESLOTS (separately to ensure consistency in client fetch)
+  for await (const timeslot of deltimeslotList) {
+    await timeslotsCol.doc(timeslot.id).delete();
+  }
+  
   return res.status(200).json({ });
 });
 

@@ -197,11 +197,10 @@ scheduleRoute.delete("/schedule", async (req, res) => {
 
   functions.logger.log("DELETE /schedule (list) by " + userid, delScheduleList);
 
-  delScheduleList.forEach( async (schedule) =>  {
-    if (schedule.id) {
-      await schedulesCol.doc(schedule.id).delete();
-    }
-  });
+  // DELETE SCHEDULES
+  for await (const schedule of delScheduleList) {
+    await schedulesCol.doc(schedule.id).delete();
+  }
 
   return res.status(200).json({ });
 });
