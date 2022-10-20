@@ -1,7 +1,10 @@
 import {Router}                           from "express";
 import * as functions                     from "firebase-functions";
 import {getUserid, isUseridAdmin}         from "../utils/useAuth";
-import {periodsCol}                       from "../utils/useDb";
+import {periodsCol,
+        timeslotsCol,
+        schedulesCol,
+        bookingsCol}                      from "../utils/useDb";
 import {Period, PeriodData, PeriodStatus} from "../types/Period";
 // import {TimeslotData} from "../types/Timeslot"
 
@@ -17,6 +20,35 @@ periodRoute.get("/period/:periodid", async (req, res) => {
   if (periodDoc.exists) {
     const periodData: PeriodData = periodDoc.data()!;
     return res.status(200).json({ id: docId, ...periodData });
+  }
+
+  return res.status(200).json({ });
+});
+
+// ---------------------
+// GET PERIOD STATISTICS
+// ---------------------
+periodRoute.get("/period/:periodid/stats", async (req, res) => {
+  const periodid: string = req.params.periodid;
+  const periodDoc = await periodsCol.doc(periodid).get();
+  if (periodDoc.exists) {
+    let schedulesCount = 0;
+    let timeslotsCount = 0;
+    let bookingsCount  = 0;
+
+    await schedulesCol.where("period", "==", periodid).get().then(snap => {
+      schedulesCount = snap.size;
+    });
+
+    await timeslotsCol.where("period", "==", periodid).get().then(snap => {
+      timeslotsCount = snap.size;
+    });
+
+    await bookingsCol.where("timeslotPeriod", "==", periodid).get().then(snap => {
+      bookingsCount = snap.size;
+    });
+
+    return res.status(200).json({ "schedules": schedulesCount, "timeslots": timeslotsCount, "bookings": bookingsCount });
   }
 
   return res.status(200).json({ });
@@ -199,7 +231,7 @@ periodRoute.put("/period/:periodid", async (req, res) => {
 // DELETE period
 // -------------
 periodRoute.delete("/period/:periodid", async (req, res) => {
-  const docId: string = req.params.periodid;
+  const periodid: string = req.params.periodid;
 
   const userid = getUserid(req);
 
@@ -208,37 +240,26 @@ periodRoute.delete("/period/:periodid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  functions.logger.log("DELETE /period/" + docId + " by " + userid);
-  await periodsCol.doc(docId).delete();
-
-  return res.status(200).json({ });
-});
-
-// ---------------------
-// DELETE period LIST
-// ---------------------
-periodRoute.delete("/period", async (req, res) => {
-  const userid = getUserid(req);
-
-  const isAdmin: boolean = await isUseridAdmin(userid);
-  if (!isAdmin) {
-    return res.status(403).json("Not allowed for non-admin");
+  // DELETE TIMESLOTS
+  const timeslotsRef = await timeslotsCol.where("period", "==", periodid).get();
+  for await (const timeslot of timeslotsRef.docs) {
+    // DELETE BOOKINGS
+    const bookingsRef = await bookingsCol.where("timeslot", "==", timeslot.id).get();
+    bookingsRef.forEach((booking) => { booking.ref.delete(); });
+    // DELETE TIMESLOT
+    timeslot.ref.delete();
   }
 
-  const delperiodList: Array<Period> = req.body.periodList;
-
-  if (!delperiodList) {
-    functions.logger.info("Incorrect body - " + req.body);
-    return res.status(400).send("Incorrect body.\n Correct syntax is: { periodList: ... }");
+  // DELETE SCHEDULES
+  try {
+    const schedulesRef = await schedulesCol.where("period", "==", periodid).get();
+    schedulesRef.forEach((schedule) => { schedule.ref.delete(); });
+  } catch (error) {
+    return res.status(500).json({ status: "error", msg: "Error deleting schedules for period - " + periodid, data: error });
   }
 
-  functions.logger.log("DELETE /period (list) by " + userid, delperiodList);
-
-  delperiodList.forEach( async (period) =>  {
-    if (period.id) {
-      await periodsCol.doc(period.id).delete();
-    }
-  });
+  functions.logger.log("DELETE /period/" + periodid + " by " + userid);
+  await periodsCol.doc(periodid).delete();
 
   return res.status(200).json({ });
 });

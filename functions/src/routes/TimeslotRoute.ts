@@ -273,7 +273,7 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
 // DELETE timeslot
 // -------------
 timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
-  const docId: string = req.params.timeslotid;
+  const timeslotid: string = req.params.timeslotid;
 
   const userid = getUserid(req);
 
@@ -282,8 +282,12 @@ timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
     return res.status(403).json("Not allowed for non-admin");
   }
 
-  functions.logger.log("DELETE /timeslot/" + docId + " by " + userid);
-  await timeslotsCol.doc(docId).delete();
+  // DELETE BOOKINGS
+  const bookingsRef = await bookingsCol.where("timeslot", "==", timeslotid).get();
+  bookingsRef.forEach((booking) => { booking.ref.delete(); });
+
+  functions.logger.log("DELETE /timeslot/" + timeslotid + " by " + userid);
+  await timeslotsCol.doc(timeslotid).delete();
 
   return res.status(200).json({ });
 });
@@ -310,6 +314,10 @@ timeslotRoute.delete("/timeslot", async (req, res) => {
 
   deltimeslotList.forEach( async (timeslot) =>  {
     if (timeslot.id) {
+      // DELETE BOOKINGS
+      const bookingsRef = await bookingsCol.where("timeslot", "==", timeslot.id).get();
+      bookingsRef.forEach((booking) => { booking.ref.delete(); });
+  
       await timeslotsCol.doc(timeslot.id).delete();
     }
   });
