@@ -1,8 +1,10 @@
-import {Router}                   from "express";
-import * as functions             from "firebase-functions";
-import {getUserid, isUseridAdmin} from "../utils/useAuth";
-import {alertsCol}                from "../utils/useDb";
-import {Alert, AlertData}         from "../types/Alert";
+import {Router}            from "express";
+import * as functions      from "firebase-functions";
+import {getUserid,
+        isUseridAdmin,
+        isUseridTrainer}   from "../utils/useAuth";
+import {alertsCol}         from "../utils/useDb";
+import {Alert, AlertData}  from "../types/Alert";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const alertRoute = Router();
@@ -29,9 +31,11 @@ alertRoute.get("/alerts", async (req, res) => {
 alertRoute.post("/alert", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
-  const isAdmin: boolean = await isUseridAdmin(userid);
-  if (!isAdmin) {
-    return res.status(403).json("Not allowed for non-admin");
+
+  const isAdmin:   boolean = await isUseridAdmin(userid);
+  const isTrainer: boolean = await isUseridTrainer(userid);
+  if (!isAdmin && !isTrainer) {
+    return res.status(403).json("Not allowed for non-(admin/trainer)");
   }
 
   if (!req.body.date  ||
@@ -64,10 +68,11 @@ alertRoute.post("/alert", async (req, res) => {
 alertRoute.put("/alert/:alertid", async (req, res) => {
   // TODO - error handling in getUserid
   const userid = getUserid(req);
-
-  const isAdmin: boolean = await isUseridAdmin(userid);
-  if (!isAdmin) {
-    return res.status(403).json("Not allowed for non-admin");
+  
+  const isAdmin:   boolean = await isUseridAdmin(userid);
+  const isTrainer: boolean = await isUseridTrainer(userid);
+  if (!isAdmin && !isTrainer) {
+    return res.status(403).json("Not allowed for non-(admin/trainer)");
   }
 
   if (!req.body.date  ||
