@@ -103,7 +103,7 @@ timeslotRoute.get("/timeslots/open/:days", async (req, res) => {
   const maxday = new Date();
   maxday.setDate(maxday.getDate() + days);
 
-  if (days == NaN || days < 0) {
+  if (isNaN(days) || days < 0) {
     return res.status(400).send("Incorrect parameter (days) - " + req.params.days);
   }
 
@@ -293,7 +293,7 @@ timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
 });
 
 // ---------------------
-// DELETE timeslot LIST
+// DELETE TIMESLOT LIST
 // ---------------------
 timeslotRoute.delete("/timeslot", async (req, res) => {
   const userid = getUserid(req);
@@ -324,7 +324,7 @@ timeslotRoute.delete("/timeslot", async (req, res) => {
   for await (const timeslot of deltimeslotList) {
     await timeslotsCol.doc(timeslot.id).delete();
   }
-  
+
   return res.status(200).json({ });
 });
 

@@ -1,11 +1,15 @@
 import {Router}                                    from "express";
 import * as functions                              from "firebase-functions";
-import {getUserid, isUseridAdmin}                  from "../utils/useAuth";
+import {getUserid,
+        isUseridAdmin,
+        isUseridTrainer,
+        isUserForAssistant}                        from "../utils/useAuth";
 import {assistantsCol, bookingsCol, rolesCol}      from "../utils/useDb";
 import {Assistant, AssistantData, EMPTY_ASSISTANT} from "../types/Assistant";
 import {BookingStatus}                             from "../types/Booking";
 import {RoleData}                                  from "../types/Role";
 import {processBookingRemoval}                     from "../routes/BookingRoute";
+import {getAssistantsForUser}                      from "../routes/UserRoute";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
 const assistantRoute = Router();
@@ -39,16 +43,50 @@ assistantRoute.get("/assistant/:assistantid", async (req, res) => {
   return res.status(200).json({ });
 });
 
+// -------------------
+// GET USER ASSISTANTS
+// -------------------
+assistantRoute.get("/assistants/user", async (req, res) => {
+  const userid = getUserid(req);
+
+  const userForAssistants: Array<string> = await getAssistantsForUser(userid);
+  const resAssistants: Array<Assistant>  = [];
+
+  for await (const assistantid of userForAssistants) {
+    const assistantDoc = await assistantsCol.doc(assistantid).get();
+    if (assistantDoc.exists) {
+      const assistantData: AssistantData= assistantDoc.data()!;
+      if (!assistantData.disabled) {
+        resAssistants.push({ id: assistantid, ...assistantData });
+      }   
+    }
+  }
+  
+  return res.status(200).json(resAssistants);
+});
+
 // ------------------
 // GET ALL ASSISTANTS
 // ------------------
 assistantRoute.get("/assistants", async (req, res) => {
+  const userid = getUserid(req);
+  const isAdmin:   boolean = await isUseridAdmin(userid);
+  const isTrainer: boolean = await isUseridTrainer(userid);
+
   const resAssistants: Array<Assistant>  = [];
   const assistantDocs =
     await assistantsCol.orderBy("lastname").orderBy("firstname").get();
 
   assistantDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resAssistants.push({ id: doc.id, ...doc.data() });
+    // TEST - Remove phone for Assistants if not Admin/Trainer
+    let assistantData: AssistantData = doc.data();
+    functions.logger.log("GET /assistant by " + userid + " - " + isAdmin + " - " + isTrainer);
+
+    if (!isAdmin && !isTrainer) {
+      functions.logger.log("GET /assistant by " + userid + " remove phone");
+      assistantData.phone = "";
+    }
+    resAssistants.push({ id: doc.id, ...assistantData });
   });
   
   return res.status(200).json(resAssistants);
@@ -135,6 +173,61 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
       phone:     assistantData.phone,
       type:      assistantData.type,
       // disabled is handled in separate endpoint, to encapsulate logic
+    }, { merge: true });
+
+  // UPDATE BOOKINGS
+  // Only update fullname (leave type as denormalized form time of booking)
+  const bookingDocs = await bookingsCol.where("assistant", "==", assistantid).get();
+
+  for await (const booking of bookingDocs.docs) {
+    await bookingsCol.doc(booking.id).set({
+        assistantFullname: assistantData.fullname,
+      }, { merge: true });
+  }
+
+  return res.status(200).json({
+    id: assistantid,
+    ...assistantData,
+  });
+});
+
+// ------------------
+// PUT ASSISTANT INFO (for UserForAssistant)
+// ------------------
+assistantRoute.put("/assistant/:assistantid/info", async (req, res) => {
+  // TODO - error handling in getUserid
+  const userid = getUserid(req);
+  const assistantid: string = req.params.assistantid;
+  const userAssistant: boolean = await isUserForAssistant(userid, assistantid);
+
+  if (!userAssistant) {
+    return res.status(403).json("Not user for assistant - " + assistantid);
+  }
+
+  if (!req.body.firstname ||
+      !req.body.lastname) {
+    return res.status(400).send("Incorrect body.\n Correct syntax is: { firstname: ..., lastname: ..., phone: ... }");
+  }
+
+  let assistantData: AssistantData = EMPTY_ASSISTANT;
+
+  const assistantDoc = await assistantsCol.doc(assistantid).get();
+  if (assistantDoc.exists) {
+    assistantData = assistantDoc.data()!;
+  }
+
+  assistantData.firstname = req.body.firstname;
+  assistantData.lastname  = req.body.lastname;
+  assistantData.fullname  = req.body.firstname + " " + req.body.lastname;
+  assistantData.phone     = req.body.phone ? req.body.phone : "";
+  // NOT TYPE
+
+  functions.logger.log("PUT /assistant/" + assistantid + "/info  by " + userid, assistantData);
+  await assistantsCol.doc(assistantid).set({
+      firstname: assistantData.firstname,
+      lastname:  assistantData.lastname,
+      fullname:  assistantData.fullname,
+      phone:     assistantData.phone,
     }, { merge: true });
 
   // UPDATE BOOKINGS

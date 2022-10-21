@@ -36,15 +36,15 @@ periodRoute.get("/period/:periodid/stats", async (req, res) => {
     let timeslotsCount = 0;
     let bookingsCount  = 0;
 
-    await schedulesCol.where("period", "==", periodid).get().then(snap => {
+    await schedulesCol.where("period", "==", periodid).get().then((snap) => {
       schedulesCount = snap.size;
     });
 
-    await timeslotsCol.where("period", "==", periodid).get().then(snap => {
+    await timeslotsCol.where("period", "==", periodid).get().then((snap) => {
       timeslotsCount = snap.size;
     });
 
-    await bookingsCol.where("timeslotPeriod", "==", periodid).get().then(snap => {
+    await bookingsCol.where("timeslotPeriod", "==", periodid).get().then((snap) => {
       bookingsCount = snap.size;
     });
 
