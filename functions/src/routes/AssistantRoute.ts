@@ -79,7 +79,7 @@ assistantRoute.get("/assistants", async (req, res) => {
 
   assistantDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     // TEST - Remove phone for Assistants if not Admin/Trainer
-    let assistantData: AssistantData = doc.data();
+    const assistantData: AssistantData = doc.data();
     functions.logger.log("GET /assistant by " + userid + " - " + isAdmin + " - " + isTrainer);
 
     if (!isAdmin && !isTrainer) {
