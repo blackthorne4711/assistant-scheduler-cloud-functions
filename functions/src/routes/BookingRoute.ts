@@ -26,37 +26,13 @@ async function processBookingRequest(booking: Booking) {
     const timeslot: Timeslot = { id: timeslotId, ...timeslotDoc.data()! };
 
     // Check availability
-    let   available        = false;
     const assistantTypeInt = parseInt(booking.assistantType);
     const availableSlotInt = parseInt(timeslot.assistantSlots[assistantTypeInt]);
-    let   allocatedSlotInt = 0;
+    const allocatedSlotInt = parseInt(timeslot.assistantAllocations[assistantTypeInt]);
 
-    // Available slot for assistant type > 0 (otherwise no point to check further)
-    if (availableSlotInt > 0) {
-      if (timeslot.assistantAllocations) {
-        // Allocation array exists
-        allocatedSlotInt = parseInt(timeslot.assistantAllocations[assistantTypeInt]);
-        if (allocatedSlotInt < availableSlotInt) {
-          // Available slot
-          available = true;
-        }
-      } else {
-        // No previous allocation array
-        // Initialize array with "0" to match assistantSlots
-        timeslot.assistantAllocations = [];
-        for (let i = 0; i < timeslot.assistantSlots.length; i++) {
-          timeslot.assistantAllocations[i] = "0";
-        }
-        // Available slot (since previous check - available slot > 0)
-        available = true;
-      }
-    }
-
-    if (available) {
+    if (availableSlotInt > 0 && allocatedSlotInt < availableSlotInt) {
       // Update timeslot with allocation (and add booking id)
-      if (!timeslot.assistantAllocations) { timeslot.assistantAllocations = []; }
       timeslot.assistantAllocations[assistantTypeInt] = (allocatedSlotInt+1).toString();
-      if (!timeslot.acceptedBookings)     { timeslot.acceptedBookings     = []; }
       timeslot.acceptedBookings.push(booking.id);
       await timeslotsCol.doc(timeslot.id).set(timeslot as TimeslotData);
 
@@ -73,7 +49,6 @@ async function processBookingRequest(booking: Booking) {
     // Reject booking with (internal) error message
     functions.logger.error("Timeslot not found in processBookingRequest (" + booking.timeslot + ")");
     booking.status = BookingStatus.REJECTED;
-    booking.statusMessage = "Internal error, timeslot not found (" + booking.timeslot + ")";
     await bookingsCol.doc(booking.id).set(booking as BookingData);
   }
   return booking.status;
@@ -87,30 +62,21 @@ export async function processBookingRemoval(booking: Booking) {
 
     // Get allocation
     const assistantTypeInt = parseInt(booking.assistantType);
-    let   allocatedSlotInt = 0;
+    const allocatedSlotInt = parseInt(timeslot.assistantAllocations[assistantTypeInt]);
 
-    if (timeslot.assistantAllocations) {
-      // Update timeslot with allocation (and remove booking id)
-      timeslot.assistantAllocations[assistantTypeInt] = (allocatedSlotInt--).toString();
-      { // Remove booking id from timeslot
-        if (timeslot.acceptedBookings) {
-          const index = timeslot.acceptedBookings.indexOf(booking.id);
-          if (index > -1) { // To check that booking id was found in array
-            timeslot.acceptedBookings.splice(index, 1); // 2nd parameter means remove one item only
-          }
-        }
+    // Update timeslot with allocation (and remove booking id)
+    timeslot.assistantAllocations[assistantTypeInt] = (allocatedSlotInt-1).toString();
+    { // Remove booking id from timeslot
+      const index = timeslot.acceptedBookings.indexOf(booking.id);
+      if (index > -1) { // To check that booking id was found in array
+        timeslot.acceptedBookings.splice(index, 1); // 2nd parameter means remove one item only
       }
-      await timeslotsCol.doc(timeslot.id).set(timeslot as TimeslotData);
-
-      // Update booking with status REMOVED
-      booking.status = BookingStatus.REMOVED;
-      await bookingsCol.doc(booking.id).set(booking as BookingData);
-    } else {
-      // No previous allocation array - Just remove booking
-      functions.logger.error("Allocation array not found in processBookingRemoval (" + booking.timeslot + ")");
-      booking.status = BookingStatus.REMOVED;
-      await bookingsCol.doc(booking.id).set(booking as BookingData);
     }
+    await timeslotsCol.doc(timeslot.id).set(timeslot as TimeslotData);
+
+    // Update booking with status REMOVED
+    booking.status = BookingStatus.REMOVED;
+    await bookingsCol.doc(booking.id).set(booking as BookingData);
   } else {
     // Timeslot not found - Just remove booking
     functions.logger.error("Timeslot not found in processBookingRemoval (" + booking.timeslot + ")");
