@@ -98,11 +98,10 @@ activityRoute.post("/activity", async (req, res) => {
       !req.body.endTime     ||
       !req.body.color       ||
       !req.body.period      ||
-      !req.body.description ||
       !req.body.assistantSlots)
   {
     return res.status(400).send(
-      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"color\": ..., \"period\": ..., \"description\": ..., \"assistantSlots\": [...] }");
+      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"color\": ..., \"period\": ..., \"assistantSlots\": [...] }");
   }
 
   // TODO - Unique constraint check?
@@ -115,7 +114,7 @@ activityRoute.post("/activity", async (req, res) => {
     endTime:                  req.body.endTime,
     color:                    req.body.color,
     period:                   req.body.period,
-    description:              req.body.description,
+    description:              req.body.description ? req.body.description : "",
     type:                     req.body.type ? req.body.type : "",
     typeName:                 req.body.typeName ? req.body.typeName : "",
     availableToUsers:         !!req.body.availableToUsers,
@@ -157,11 +156,10 @@ activityRoute.put("/activity/:activityid", async (req, res) => {
       !req.body.endTime     ||
       !req.body.color       ||
       !req.body.period      ||
-      !req.body.description ||
       !req.body.assistantSlots)
   {
     return res.status(400).send(
-      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"color\": ..., \"period\": ..., \"description\": ..., \"assistantSlots\": [...] }");
+      "Incorrect body.\n Correct syntax is: { \"date\": ..., \"startTime\": ..., \"endTime\": ..., \"color\": ..., \"period\": ..., \"assistantSlots\": [...] }");
   }
 
   // TODO - Unique constraint check?
@@ -174,7 +172,7 @@ activityRoute.put("/activity/:activityid", async (req, res) => {
     endTime:                  req.body.endTime,
     color:                    req.body.color,
     period:                   req.body.period,
-    description:              req.body.description,
+    description:              req.body.description ? req.body.description : "",
     type:                     req.body.type ? req.body.type : "",
     typeName:                 req.body.typeName ? req.body.typeName : "",
     availableToUsers:         !!req.body.availableToUsers,

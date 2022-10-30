@@ -44,7 +44,6 @@ async function processActivityBookingRequest(ActivityBooking: ActivityBooking) {
         ActivityBooking.statusMessage = "No available assistant slots (typeless)";
         await activitybookingsCol.doc(ActivityBooking.id).set(ActivityBooking as ActivityBookingData);
       } // END TYPELESS
-      
     } else {
       // TYPED - Use assistant type slots
       const assistantTypeInt = parseInt(ActivityBooking.assistantType);
@@ -67,7 +66,6 @@ async function processActivityBookingRequest(ActivityBooking: ActivityBooking) {
         await activitybookingsCol.doc(ActivityBooking.id).set(ActivityBooking as ActivityBookingData);
       } 
     } // END TYPED
-
   } else {
     // Reject ActivityBooking with (internal) error message
     functions.logger.error("Activity not found in processActivityBookingRequest (" + ActivityBooking.activity + ")");
