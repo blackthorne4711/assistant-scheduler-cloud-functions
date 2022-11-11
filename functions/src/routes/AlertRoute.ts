@@ -13,6 +13,7 @@ const alertRoute = Router();
 // GET ALL ALERTS
 // ---------------
 alertRoute.get("/alerts", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resAlerts: Array<Alert>  = [];
 
   const alertDocs =
@@ -29,6 +30,7 @@ alertRoute.get("/alerts", async (req, res) => {
 // POST ALERT
 // -----------
 alertRoute.post("/alert", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -66,6 +68,7 @@ alertRoute.post("/alert", async (req, res) => {
 // PUT ALERT
 // ----------
 alertRoute.put("/alert/:alertid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
   
@@ -103,6 +106,7 @@ alertRoute.put("/alert/:alertid", async (req, res) => {
 // DELETE ALERT
 // -------------
 alertRoute.delete("/alert/:alertid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.alertid;
   const userid = getUserid(req);
 

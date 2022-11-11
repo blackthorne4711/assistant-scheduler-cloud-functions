@@ -29,6 +29,7 @@ export async function getActivity(activityid: string) {
 // GET ACTIVITY
 // -------------
 activityRoute.get("/activity/:activityid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.activityid;
   const activityDoc = await activitiesCol.doc(docId).get();
   if (activityDoc.exists) {
@@ -42,6 +43,7 @@ activityRoute.get("/activity/:activityid", async (req, res) => {
 // GET ALL ACTIVITIES
 // ------------------
 activityRoute.get("/activities", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resActivities: Array<Activity>  = [];
   const activityDocs = await activitiesCol.get();
 
@@ -54,6 +56,7 @@ activityRoute.get("/activities", async (req, res) => {
 // GET ALL ACTIVITIES FOR PERIOD
 // -----------------------------
 activityRoute.get("/activities/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodId:     string           = req.params.periodid;
   const resActivities: Array<Activity>  = [];
   const activityDocs = await activitiesCol.where("period", "==", periodId).get();
@@ -67,6 +70,7 @@ activityRoute.get("/activities/period/:periodid", async (req, res) => {
 // GET ALL OPEN (AND CURRENT) ACTIVITIES 
 // -------------------------------------
 activityRoute.get("/activities/open", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
   const resActivities:   Array<Activity> = [];
 
@@ -85,6 +89,7 @@ activityRoute.get("/activities/open", async (req, res) => {
 // POST ACTIVITY
 // -------------
 activityRoute.post("/activity", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -143,6 +148,7 @@ activityRoute.post("/activity", async (req, res) => {
 // PUT ACTIVITY
 // -------------
 activityRoute.put("/activity/:activityid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -222,8 +228,8 @@ activityRoute.put("/activity/:activityid", async (req, res) => {
 // DELETE activity
 // ---------------
 activityRoute.delete("/activity/:activityid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const activityid: string = req.params.activityid;
-
   const userid = getUserid(req);
 
   const isAdmin: boolean = await isUseridAdmin(userid);
@@ -245,6 +251,7 @@ activityRoute.delete("/activity/:activityid", async (req, res) => {
 // DELETE ACTIVITY LIST
 // ---------------------
 activityRoute.delete("/activity", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   const isAdmin: boolean = await isUseridAdmin(userid);

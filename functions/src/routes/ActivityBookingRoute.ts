@@ -14,7 +14,7 @@ import {getAssistantsForUser}                                 from "../routes/Us
 import { getWeekday } from "../utils/helperfunctions";
 
 /* eslint new-cap: ["error", { "capIsNewExceptions": ["Router"] }] */
-const ActivityBookingRoute = Router();
+const activityBookingRoute = Router();
 
 // --------------------------
 // ActivityBooking PROCESSING
@@ -33,6 +33,7 @@ async function processActivityBookingRequest(ActivityBooking: ActivityBooking) {
       if (availableInt > 0 && allocatedInt < availableInt) {
         // Update activity with allocation (and add ActivityBooking id)
         activity.assistantAllocations[0] = (allocatedInt+1).toString(); // Typeless = first slot
+        activity.acceptedActivityBookings.push(ActivityBooking.id);
         await activitiesCol.doc(activity.id).set(activity as ActivityData);
 
         // Update ActivityBooking with status ACCEPTED
@@ -118,11 +119,12 @@ export async function processActivityBookingRemoval(ActivityBooking: ActivityBoo
 // -------------
 // GET ActivityBooking
 // -------------
-ActivityBookingRoute.get("/ActivityBooking/:ActivityBookingid", async (req, res) => {
+activityBookingRoute.get("/activitybooking/:ActivityBookingid", async (req, res) => {
   const docId: string = req.params.ActivityBookingid;
   const ActivityBookingDoc = await activitybookingsCol.doc(docId).get();
   if (ActivityBookingDoc.exists) {
     const ActivityBookingData: ActivityBookingData = ActivityBookingDoc.data()!;
+    res.header("Access-Control-Allow-Origin", "*");
     return res.status(200).json({ id: docId, ...ActivityBookingData });
   }
   return res.status(200).json({ });
@@ -131,32 +133,35 @@ ActivityBookingRoute.get("/ActivityBooking/:ActivityBookingid", async (req, res)
 // ------------------
 // GET ALL ActivityBookingS
 // ------------------
-ActivityBookingRoute.get("/ActivityBookings", async (req, res) => {
+activityBookingRoute.get("/activitybookings", async (req, res) => {
   const userid = getUserid(req);
   const isAdmin:   boolean = await isUseridAdmin(userid);
   const isTrainer: boolean = await isUseridTrainer(userid);
 
   if (!isAdmin && !isTrainer) {
-    functions.logger.error("GET /ActivityBookings - not allowed - " + userid);
+    functions.logger.error("GET /activitybookings - not allowed - " + userid);
+    res.header("Access-Control-Allow-Origin", "*");
     return res.status(403).json("Not allowed for non-(admin/trainer)");
   }
 
   const resActivityBookings: Array<ActivityBooking>  = [];
   const ActivityBookingDocs = await activitybookingsCol.orderBy("activity").orderBy("assistant").get();
   ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
+  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 
 // ---------------------------------------------------------------------
 // GET ALL UPCOMING ActivityBookingS (current and future ActivityBookings)
 // ---------------------------------------------------------------------
-ActivityBookingRoute.get("/ActivityBookings/upcoming", async (req, res) => {
+activityBookingRoute.get("/activitybookings/upcoming", async (req, res) => {
   const userid = getUserid(req);
   const isAdmin:   boolean = await isUseridAdmin(userid);
   const isTrainer: boolean = await isUseridTrainer(userid);
 
   if (!isAdmin && !isTrainer) {
-    functions.logger.error("GET /ActivityBookings/upcoming - not allowed - " + userid);
+    functions.logger.error("GET /activitybookings/upcoming - not allowed - " + userid);
+    res.header("Access-Control-Allow-Origin", "*");
     return res.status(403).json("Not allowed for non-(admin/trainer)");
   }
 
@@ -166,59 +171,60 @@ ActivityBookingRoute.get("/ActivityBookings/upcoming", async (req, res) => {
     resActivityBookings.push({ id: doc.id, ...doc.data() });
   });
   
+  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 
 // ---------------------------------------------------------------------
 // GET ALL USER ActivityBookingS (i.e. for assistants for user and current dates)
 // ---------------------------------------------------------------------
-ActivityBookingRoute.get("/ActivityBookings/user", async (req, res) => {
+activityBookingRoute.get("/activitybookings/user", async (req, res) => {
   const userid     = getUserid(req);
   const assistants = await getAssistantsForUser(userid);
 
   const resActivityBookings: Array<ActivityBooking>  = [];
 
   for (let i = 0; i < assistants.length; i++) {
-    functions.logger.log("GET /ActivityBookings/user - assistant - " + assistants[i]);
+    functions.logger.log("GET /activitybookings/user - assistant - " + assistants[i]);
     const ActivityBookingDocs =
       await activitybookingsCol.where("activityDate", ">=", (new Date()).toLocaleDateString("sv-SE")).where("assistant", "==", assistants[i]).get();
     ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
   }
-  
+  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 
 // -----------------------------
 // GET ALL ActivityBookingS FOR PERIOD
 // -----------------------------
-ActivityBookingRoute.get("/ActivityBookings/period/:periodid", async (req, res) => {
+activityBookingRoute.get("/activitybookings/period/:periodid", async (req, res) => {
   const periodId:     string           = req.params.periodid;
   const resActivityBookings: Array<ActivityBooking>  = [];
   const ActivityBookingDocs =
     await activitybookingsCol.where("activityPeriod", "==", periodId).get();
   ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
-
+  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 
 // ------------------------------
 // GET ALL ActivityBookingS FOR ACTIVITY
 // ------------------------------
-ActivityBookingRoute.get("/ActivityBookings/activity/:activityid", async (req, res) => {
+activityBookingRoute.get("/activitybookings/activity/:activityid", async (req, res) => {
   const activityId: string = req.params.activityid;
   const resActivityBookings: Array<ActivityBooking>  = [];
 
   const ActivityBookingDocs =
     await activitybookingsCol.where("activity", "==", activityId).orderBy("activity").orderBy("assistant").get();
   ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
-  
+  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 
 // -------------------------------------
 // GET ALL OPEN (AND CURRENT) ActivityBookingS 
 // -------------------------------------
-ActivityBookingRoute.get("/ActivityBookings/open", async (req, res) => {
+activityBookingRoute.get("/activitybookings/open", async (req, res) => {
   const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
   const resActivityBookings: Array<ActivityBooking> = [];
 
@@ -233,14 +239,15 @@ ActivityBookingRoute.get("/ActivityBookings/open", async (req, res) => {
       resActivityBookings.push({ id: ActivityBooking.id, ...ActivityBooking.data() });
     }
   }
-
+  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 
 // --------------------
 // POST ActivityBooking
 // --------------------
-ActivityBookingRoute.post("/ActivityBooking", async (req, res) => {
+activityBookingRoute.post("/activitybooking", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -334,11 +341,12 @@ ActivityBookingRoute.post("/ActivityBooking", async (req, res) => {
 // - (isUserForAssistant) - ONLY ALLOW STATUS REMOVED
 // - (ONLY ADMIN)         - ALLOW STATUS TO BE SET
 // --------------------------------------------------
-ActivityBookingRoute.put("/ActivityBooking/:ActivityBookingid", async (req, res) => {
+activityBookingRoute.put("/activitybooking/:activitybookingid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
-  const docId: string = req.params.ActivityBookingid;
+  const docId: string = req.params.activitybookingid;
 
   // Fetch existing ActivityBooking
   const ActivityBookingDoc = await activitybookingsCol.doc(docId).get();
@@ -407,4 +415,4 @@ ActivityBookingRoute.put("/ActivityBooking/:ActivityBookingid", async (req, res)
   });
 });
 
-export {ActivityBookingRoute};
+export {activityBookingRoute};

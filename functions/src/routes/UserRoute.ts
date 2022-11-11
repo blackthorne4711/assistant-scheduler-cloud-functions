@@ -40,6 +40,7 @@ export async function getAssistantsForUser(userid: string) {
 // GET (current) USER
 // ------------------
 userRoute.get("/user", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   const roleDoc = await rolesCol.doc(userid).get();
@@ -54,6 +55,7 @@ userRoute.get("/user", async (req, res) => {
 // GET USERS
 // ----------
 userRoute.get("/users", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   const isAdmin:   boolean = await isUseridAdmin(userid);
@@ -129,6 +131,7 @@ userRoute.get("/users", async (req, res) => {
 // PUT USER
 // --------
 userRoute.put("/user/:uid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const currentuserid = getUserid(req);
   const uid = req.params.uid;
 
@@ -180,6 +183,7 @@ userRoute.put("/user/:uid", async (req, res) => {
 // POST USER
 // ---------
 userRoute.post("/user", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const currentuserid = getUserid(req);
   let   uid = "";
 
@@ -243,6 +247,7 @@ userRoute.post("/user", async (req, res) => {
 // POST SET PASSWORD
 // --------
 userRoute.put("/user/:uid/password", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const currentuserid = getUserid(req);
   const uid = req.params.uid;
   // CHECK IF ADMIN
@@ -274,6 +279,7 @@ userRoute.put("/user/:uid/password", async (req, res) => {
 // PUT SET DISABLED
 // --------
 userRoute.put("/user/:uid/disabled", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const currentuserid = getUserid(req);
   const uid = req.params.uid;
   // CHECK IF ADMIN
@@ -301,6 +307,7 @@ userRoute.put("/user/:uid/disabled", async (req, res) => {
 // DELETE USER (+Role & Profile)
 // -----------------------------
 userRoute.delete("/user/:uid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const currentuserid = getUserid(req);
   const uid = req.params.uid;
   // CHECK IF ADMIN

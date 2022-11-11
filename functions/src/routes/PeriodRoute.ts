@@ -15,6 +15,7 @@ const periodRoute = Router();
 // GET PERIOD
 // ----------
 periodRoute.get("/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.periodid;
   const periodDoc = await periodsCol.doc(docId).get();
   if (periodDoc.exists) {
@@ -29,6 +30,7 @@ periodRoute.get("/period/:periodid", async (req, res) => {
 // GET PERIOD STATISTICS
 // ---------------------
 periodRoute.get("/period/:periodid/stats", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodid: string = req.params.periodid;
   const periodDoc = await periodsCol.doc(periodid).get();
   if (periodDoc.exists) {
@@ -58,6 +60,7 @@ periodRoute.get("/period/:periodid/stats", async (req, res) => {
 // GET ALL PERIODS
 // ---------------
 periodRoute.get("/periods", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resPeriods: Array<Period>  = [];
 
   const periodDocs =
@@ -74,6 +77,7 @@ periodRoute.get("/periods", async (req, res) => {
 // GET ALL PERIODS WITH STATUS
 // ----------------------------
 periodRoute.get("/periods/status/:status", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const status: string = req.params.status;
 
   const resPeriods: Array<Period>  = [];
@@ -92,6 +96,7 @@ periodRoute.get("/periods/status/:status", async (req, res) => {
 // POST PERIOD
 // -----------
 periodRoute.post("/period", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -142,10 +147,11 @@ periodRoute.post("/period", async (req, res) => {
 
   let docId: string = ""; // Set from res.id
   const periodData: PeriodData = {
-    name:   req.body.name,
-    from:   req.body.from,
-    to:     req.body.to,
-    status: PeriodStatus.PREPARE,
+    name:      req.body.name,
+    from:      req.body.from,
+    to:        req.body.to,
+    status:    PeriodStatus.PREPARE,
+    preselect: false,
   };
 
   if (req.body.description) { periodData.description = req.body.description; }
@@ -164,6 +170,7 @@ periodRoute.post("/period", async (req, res) => {
 // PUT PERIOD
 // ----------
 periodRoute.put("/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -208,12 +215,21 @@ periodRoute.put("/period/:periodid", async (req, res) => {
 
   // TODO - Unique constraint check?
 
+  if (req.body.preselect) {
+    // Will set PRESELECT=TRUE for this Period -> set PRESELECT=FALSE for all, first
+    const periodsRef = await periodsCol.get();
+    for await (const period of periodsRef.docs) {
+      await periodsCol.doc(period.id).set({ preselect: false }, { merge: true });
+    } 
+  }
+
   const docId: string = req.params.periodid;
   const periodData: PeriodData = {
     name:   req.body.name,
     from:   req.body.from,
     to:     req.body.to,
     status: req.body.status,
+    preselect: !!req.body.preselect,
   };
 
   if (req.body.description) { periodData.description = req.body.description; }
@@ -231,6 +247,7 @@ periodRoute.put("/period/:periodid", async (req, res) => {
 // DELETE period
 // -------------
 periodRoute.delete("/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodid: string = req.params.periodid;
 
   const userid = getUserid(req);

@@ -11,6 +11,7 @@ const scheduleRoute = Router();
 // GET SCHEDULE
 // -------------
 scheduleRoute.get("/schedule/:scheduleid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.scheduleid;
 
   const scheduleDoc = await schedulesCol.doc(docId).get();
@@ -26,6 +27,7 @@ scheduleRoute.get("/schedule/:scheduleid", async (req, res) => {
 // GET ALL SCHEDULES
 // ------------------
 scheduleRoute.get("/schedules", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resSchedules: Array<Schedule>  = [];
 
   const scheduleDocs =
@@ -42,6 +44,7 @@ scheduleRoute.get("/schedules", async (req, res) => {
 // GET ALL SCHEDULES FOR PERIOD
 // -----------------------------
 scheduleRoute.get("/schedules/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodId: string = req.params.periodid;
   const resSchedules: Array<Schedule>  = [];
   const scheduleDocs =
@@ -58,6 +61,7 @@ scheduleRoute.get("/schedules/period/:periodid", async (req, res) => {
 // POST SCHEDULE
 // ---------------
 scheduleRoute.post("/schedule", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -109,6 +113,7 @@ scheduleRoute.post("/schedule", async (req, res) => {
 // PUT SCHEDULE
 // ---------------
 scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -162,6 +167,7 @@ scheduleRoute.put("/schedule/:scheduleid", async (req, res) => {
 // DELETE SCHEDULE
 // -------------
 scheduleRoute.delete("/schedule/:scheduleid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.scheduleid;
 
   const userid = getUserid(req);
@@ -181,6 +187,7 @@ scheduleRoute.delete("/schedule/:scheduleid", async (req, res) => {
 // DELETE SCHEDULE LIST
 // ---------------------
 scheduleRoute.delete("/schedule", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   const isAdmin: boolean = await isUseridAdmin(userid);

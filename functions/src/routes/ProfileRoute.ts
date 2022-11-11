@@ -11,6 +11,7 @@ const profileRoute = Router();
 // GET (current) PROFILE - get profile and role for current user
 // -------------------------------------------------------------
 profileRoute.get("/profile", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -21,7 +22,6 @@ profileRoute.get("/profile", async (req, res) => {
     profile = { id: userid, ...profileData };
   }
   // TODO - Maybe add handling if no doc found?
-  // res.header("Access-Control-Allow-Origin", "*");
 
   return res.status(200).json(profile);
 });
@@ -30,6 +30,7 @@ profileRoute.get("/profile", async (req, res) => {
 // GET PROFILE - get profile and role for userid
 // ---------------------------------------------
 profileRoute.get("/profile/:userid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = req.params.userid;
 
@@ -47,6 +48,7 @@ profileRoute.get("/profile/:userid", async (req, res) => {
 // GET PROFILES - get all profiles
 // -------------------------------
 profileRoute.get("/profiles", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resProfiles: Array<Profile>  = [];
   const userid = getUserid(req);
 
@@ -59,7 +61,7 @@ profileRoute.get("/profiles", async (req, res) => {
   docRes.forEach((doc: FirebaseFirestore.DocumentData) => {
     resProfiles.push({ id: doc.id, ...doc.data() });
   });
-  
+
   return res.status(200).json(resProfiles);
 });
 
@@ -67,6 +69,7 @@ profileRoute.get("/profiles", async (req, res) => {
 // POST PROFILE - create profile (USER: current, ADMIN: any)
 // ---------------------------------------------------------
 profileRoute.post("/profile", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   if (!req.body.email     ||
@@ -102,7 +105,7 @@ profileRoute.post("/profile", async (req, res) => {
   // Set Profile (overwrite if exists)
   await profilesCol.doc(docId).set(profileData);
 
-    return res.status(200).json({
+  return res.status(200).json({
     id: docId,
     ...profileData,
   });

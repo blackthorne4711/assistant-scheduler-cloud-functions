@@ -33,6 +33,7 @@ export async function getAssistant(assistantid: string) {
 // GET ASSISTANT
 // -------------
 assistantRoute.get("/assistant/:assistantid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.assistantid;
   const assistantDoc = await assistantsCol.doc(docId).get();
   if (assistantDoc.exists) {
@@ -47,6 +48,7 @@ assistantRoute.get("/assistant/:assistantid", async (req, res) => {
 // GET USER ASSISTANTS
 // -------------------
 assistantRoute.get("/assistants/user", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   const userForAssistants: Array<string> = await getAssistantsForUser(userid);
@@ -69,6 +71,7 @@ assistantRoute.get("/assistants/user", async (req, res) => {
 // GET ALL ASSISTANTS
 // ------------------
 assistantRoute.get("/assistants", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
   const isAdmin:   boolean = await isUseridAdmin(userid);
   const isTrainer: boolean = await isUseridTrainer(userid);
@@ -96,6 +99,7 @@ assistantRoute.get("/assistants", async (req, res) => {
 // POST ASSISTANT
 // ---------------
 assistantRoute.post("/assistant", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
   const isAdmin: boolean = await isUseridAdmin(userid);
@@ -135,6 +139,7 @@ assistantRoute.post("/assistant", async (req, res) => {
 // PUT ASSISTANT
 // ---------------
 assistantRoute.put("/assistant/:assistantid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -195,6 +200,7 @@ assistantRoute.put("/assistant/:assistantid", async (req, res) => {
 // PUT ASSISTANT INFO (for UserForAssistant)
 // ------------------
 assistantRoute.put("/assistant/:assistantid/info", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
   const assistantid: string = req.params.assistantid;
@@ -250,6 +256,7 @@ assistantRoute.put("/assistant/:assistantid/info", async (req, res) => {
 // DISABLE ASSISTANT
 // -----------------
 assistantRoute.put("/assistant/:assistantid/disabled", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -286,6 +293,7 @@ assistantRoute.put("/assistant/:assistantid/disabled", async (req, res) => {
 // DELETE ASSISTANT
 // ---------------
 assistantRoute.delete("/assistant/:assistantid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
   const assistantid = req.params.assistantid;

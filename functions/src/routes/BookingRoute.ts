@@ -89,6 +89,7 @@ export async function processBookingRemoval(booking: Booking) {
 // GET BOOKING
 // -------------
 bookingRoute.get("/booking/:bookingid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.bookingid;
   const bookingDoc = await bookingsCol.doc(docId).get();
   if (bookingDoc.exists) {
@@ -99,10 +100,13 @@ bookingRoute.get("/booking/:bookingid", async (req, res) => {
   return res.status(200).json({ });
 });
 
+// res.set('Access-Control-Allow-Origin', '*');
+
 // ------------------
 // GET ALL BOOKINGS
 // ------------------
 bookingRoute.get("/bookings", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resBookings: Array<Booking>  = [];
 
   const bookingDocs =
@@ -119,6 +123,7 @@ bookingRoute.get("/bookings", async (req, res) => {
 // GET ALL UPCOMING BOOKINGS (current and future bookings)
 // ---------------------------------------------------------------------
 bookingRoute.get("/bookings/upcoming", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   // CHECK IF ADMIN
@@ -143,6 +148,7 @@ bookingRoute.get("/bookings/upcoming", async (req, res) => {
 // GET ALL USER BOOKINGS (i.e. for assistants for user and current dates)
 // ---------------------------------------------------------------------
 bookingRoute.get("/bookings/user", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid     = getUserid(req);
   const assistants = await getAssistantsForUser(userid);
 
@@ -167,6 +173,7 @@ bookingRoute.get("/bookings/user", async (req, res) => {
 // GET ALL BOOKINGS FOR PERIOD
 // -----------------------------
 bookingRoute.get("/bookings/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodId:     string           = req.params.periodid;
   const resBookings: Array<Booking>  = [];
   const bookingDocs =
@@ -183,6 +190,7 @@ bookingRoute.get("/bookings/period/:periodid", async (req, res) => {
 // GET ALL BOOKINGS FOR TIMESLOT
 // ------------------------------
 bookingRoute.get("/bookings/timeslot/:timeslotid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const timeslotId: string = req.params.timeslotid;
   const resBookings: Array<Booking>  = [];
 
@@ -200,6 +208,7 @@ bookingRoute.get("/bookings/timeslot/:timeslotid", async (req, res) => {
 // GET ALL OPEN (AND CURRENT) BOOKINGS 
 // -------------------------------------
 bookingRoute.get("/bookings/open", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
   const resBookings:   Array<Booking> = [];
 
@@ -223,6 +232,7 @@ bookingRoute.get("/bookings/open", async (req, res) => {
 // POST BOOKING
 // -------------
 bookingRoute.post("/booking", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -317,6 +327,7 @@ bookingRoute.post("/booking", async (req, res) => {
 // - (ONLY ADMIN)         - ALLOW STATUS TO BE SET
 // --------------------------------------------------
 bookingRoute.put("/booking/:bookingid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 

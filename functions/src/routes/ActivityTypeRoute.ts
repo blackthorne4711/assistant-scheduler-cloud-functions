@@ -25,6 +25,7 @@ export async function getActivityType(activitytypeid: string) {
 // GET ACTIVITYTYPE
 // ----------------
 activityTypeRoute.get("/activity/:activitytypeid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.activitytypeid;
   const activitytypeDoc = await activitytypesCol.doc(docId).get();
   if (activitytypeDoc.exists) {
@@ -38,6 +39,7 @@ activityTypeRoute.get("/activity/:activitytypeid", async (req, res) => {
 // GET ALL ACTIVITYTYPES
 // ---------------------
 activityTypeRoute.get("/activitytypes", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resactivitytypes: Array<ActivityType>  = [];
   const activitytypeDocs = await activitytypesCol.get();
   activitytypeDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
@@ -50,6 +52,7 @@ activityTypeRoute.get("/activitytypes", async (req, res) => {
 // POST ACTIVITYTYPE
 // -----------------
 activityTypeRoute.post("/activitytype", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -95,6 +98,7 @@ activityTypeRoute.post("/activitytype", async (req, res) => {
 // PUT ACTIVITYTYPE
 // ----------------
 activityTypeRoute.put("/activitytype/:activitytypeid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -141,6 +145,7 @@ activityTypeRoute.put("/activitytype/:activitytypeid", async (req, res) => {
 // DELETE ACTIVITYTYPE
 // -------------------
 activityTypeRoute.delete("/activitytype/:activitytypeid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const activitytypeid: string = req.params.activitytypeid;
 
   const userid = getUserid(req);

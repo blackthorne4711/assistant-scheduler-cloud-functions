@@ -29,6 +29,7 @@ export async function getTimeslot(timeslotid: string) {
 // GET TIMESLOT
 // -------------
 timeslotRoute.get("/timeslot/:timeslotid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const docId: string = req.params.timeslotid;
 
   const timeslotDoc = await timeslotsCol.doc(docId).get();
@@ -44,6 +45,7 @@ timeslotRoute.get("/timeslot/:timeslotid", async (req, res) => {
 // GET ALL TIMESLOTS
 // ------------------
 timeslotRoute.get("/timeslots", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const resTimeslots: Array<Timeslot>  = [];
   const timeslotDocs =
     await timeslotsCol.orderBy("startTime", "desc").get();
@@ -59,6 +61,7 @@ timeslotRoute.get("/timeslots", async (req, res) => {
 // GET ALL TIMESLOTS FOR PERIOD
 // -----------------------------
 timeslotRoute.get("/timeslots/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodId:     string           = req.params.periodid;
   const resTimeslots: Array<Timeslot>  = [];
   const timeslotDocs =
@@ -75,6 +78,7 @@ timeslotRoute.get("/timeslots/period/:periodid", async (req, res) => {
 // GET ALL OPEN (AND CURRENT) TIMESLOTS 
 // -------------------------------------
 timeslotRoute.get("/timeslots/open", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
   const resTimeslots:   Array<Timeslot> = [];
 
@@ -98,6 +102,7 @@ timeslotRoute.get("/timeslots/open", async (req, res) => {
 // GET OPEN (AND CURRENT) TIMESLOTS, UP TO X DAYS
 // ----------------------------------------------
 timeslotRoute.get("/timeslots/open/:days", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const days: number = parseInt(req.params.days);
   const today = new Date();
   const maxday = new Date();
@@ -131,6 +136,7 @@ timeslotRoute.get("/timeslots/open/:days", async (req, res) => {
 // POST TIMESLOT
 // -------------
 timeslotRoute.post("/timeslot", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -190,6 +196,7 @@ timeslotRoute.post("/timeslot", async (req, res) => {
 // PUT TIMESLOT
 // -------------
 timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   // TODO - error handling in getUserid
   const userid = getUserid(req);
 
@@ -273,6 +280,7 @@ timeslotRoute.put("/timeslot/:timeslotid", async (req, res) => {
 // DELETE timeslot
 // -------------
 timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const timeslotid: string = req.params.timeslotid;
 
   const userid = getUserid(req);
@@ -296,6 +304,7 @@ timeslotRoute.delete("/timeslot/:timeslotid", async (req, res) => {
 // DELETE TIMESLOT LIST
 // ---------------------
 timeslotRoute.delete("/timeslot", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const userid = getUserid(req);
 
   const isAdmin: boolean = await isUseridAdmin(userid);
@@ -332,6 +341,7 @@ timeslotRoute.delete("/timeslot", async (req, res) => {
 // DELETE ALL TIMESLOTS FROM SCHEDULE
 // -----------------------------------
 timeslotRoute.delete("/timeslots/schedule/:scheduleid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
   const scheduleid: string = req.params.scheduleid;
 
   const userid = getUserid(req);

@@ -39,6 +39,7 @@ module.exports = {
     "block-spacing": 0,
     "no-trailing-spaces": 0,
     "@typescript-eslint/no-inferrable-types": 0,
+    "linebreak-style": 0,
   },
 
 };
