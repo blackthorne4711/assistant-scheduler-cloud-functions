@@ -111,6 +111,76 @@
           "order": "DESCENDING"
         }
       ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "period",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "date",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activities",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "period",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "startTime",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activitybookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "assistant",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "activityDate",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activitybookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "activity",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "assistant",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "activitybookings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "activityPeriod",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "activityDate",
+          "order": "ASCENDING"
+        }
+      ]
     }
   ],
   "fieldOverrides": []
