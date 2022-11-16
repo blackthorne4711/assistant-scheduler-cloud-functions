@@ -87,10 +87,10 @@ alertRoute.put("/alert/:alertid", async (req, res) => {
 
   const docId: string = req.params.alertid;
   const alertData: AlertData = {
-    date:  req.body.alertDate,
-    type:  req.body.alertType,
-    title: req.body.alertTitle,
-    text:  req.body.alertText,
+    date:  req.body.date,
+    type:  req.body.type,
+    title: req.body.title,
+    text:  req.body.text,
   };
 
   functions.logger.log("PUT /alert by " + userid, alertData);
