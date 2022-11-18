@@ -89,7 +89,6 @@ export async function processActivityBookingRemoval(ActivityBooking: ActivityBoo
       const allocatedInt = parseInt(activity.assistantAllocations[0]); // Typeless = first slot
       // Update allocation
       activity.assistantAllocations[0] = (allocatedInt-1).toString();  // Typeless = first slot
-
     } else {
       // TYPED - Use assistant type slots
       const assistantTypeInt = parseInt(ActivityBooking.assistantType);
