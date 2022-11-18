@@ -80,10 +80,10 @@ assistantRoute.get("/assistants", async (req, res) => {
   const assistantDocs =
     await assistantsCol.orderBy("lastname").orderBy("firstname").get();
 
+  functions.logger.log("GET /assistant by " + userid + " - " + isAdmin + " - " + isTrainer);
   assistantDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
     // TEST - Remove phone for Assistants if not Admin/Trainer
     const assistantData: AssistantData = doc.data();
-    functions.logger.log("GET /assistant by " + userid + " - " + isAdmin + " - " + isTrainer);
 
     if (!isAdmin && !isTrainer) {
       functions.logger.log("GET /assistant by " + userid + " remove phone");

@@ -84,26 +84,26 @@ export async function processActivityBookingRemoval(ActivityBooking: ActivityBoo
   if (activityDoc.exists) {
     const activity: Activity = { id: activityId, ...activityDoc.data()! };
 
+    functions.logger.info("processActivityBookingRemoval TYPELESS=" + activity.typelessSlots + " (" + ActivityBooking.id, activity.assistantAllocations);
     if (activity.typelessSlots) {
-      // TYPELESS - No separation of assistant type
-      const allocatedInt = parseInt(activity.assistantAllocations[0]);    // Typeless = first slot
+      const allocatedInt = parseInt(activity.assistantAllocations[0]); // Typeless = first slot
       // Update allocation
-      activity.assistantAllocations[0] = (allocatedInt-1).toString(); // Typeless = first slot
-      await activitiesCol.doc(activity.id).set(activity as ActivityData);
+      activity.assistantAllocations[0] = (allocatedInt-1).toString();  // Typeless = first slot
+
     } else {
       // TYPED - Use assistant type slots
       const assistantTypeInt = parseInt(ActivityBooking.assistantType);
-      const allocatedSlotInt = parseInt(activity.assistantAllocations[assistantTypeInt]);
+      const allocatedInt = parseInt(activity.assistantAllocations[assistantTypeInt]);
       // Update allocation
-      activity.assistantAllocations[assistantTypeInt] = (allocatedSlotInt-1).toString();
-      { // Remove ActivityBooking id from activity
-        const index = activity.acceptedActivityBookings.indexOf(ActivityBooking.id);
-        if (index > -1) { // Check if id was found in array
-          activity.acceptedActivityBookings.splice(index, 1); // 2nd parameter means remove one item only
-        }
-      }
-      await activitiesCol.doc(activity.id).set(activity as ActivityData);
+      activity.assistantAllocations[assistantTypeInt] = (allocatedInt-1).toString();
     }
+
+    // Remove ActivityBooking id from activity
+    const index = activity.acceptedActivityBookings.indexOf(ActivityBooking.id);
+    if (index > -1) { // Check if id was found in array
+      activity.acceptedActivityBookings.splice(index, 1); // 2nd parameter means remove one item only
+    }
+    await activitiesCol.doc(activity.id).set(activity as ActivityData);
 
     // Update ActivityBooking with status REMOVED
     ActivityBooking.status = ActivityBookingStatus.REMOVED;
@@ -405,7 +405,7 @@ activityBookingRoute.put("/activitybooking/:activitybookingid", async (req, res)
   await activitybookingsCol.doc(docId).set(ActivityBookingData);
   // PROCESS ActivityBooking
   if (ActivityBookingData.status == ActivityBookingStatus.REMOVED || (isAdmin && ActivityBookingData.status == ActivityBookingStatus.REJECTED)) {
-    processActivityBookingRemoval({ id: docId, ...ActivityBookingData});
+    await processActivityBookingRemoval({ id: docId, ...ActivityBookingData});
   }
   // TODO - Handle Admin setting other status than REMOVED/REJECTED
 
