@@ -25,38 +25,6 @@ export async function getTimeslot(timeslotid: string) {
   return timeslot;
 }
 
-// -------------
-// GET TIMESLOT
-// -------------
-timeslotRoute.get("/timeslot/:timeslotid", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const docId: string = req.params.timeslotid;
-
-  const timeslotDoc = await timeslotsCol.doc(docId).get();
-  if (timeslotDoc.exists) {
-    const timeslotData: TimeslotData = timeslotDoc.data()!;
-    return res.status(200).json({ id: docId, ...timeslotData });
-  }
-
-  return res.status(200).json({ });
-});
-
-// ------------------
-// GET ALL TIMESLOTS
-// ------------------
-timeslotRoute.get("/timeslots", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const resTimeslots: Array<Timeslot>  = [];
-  const timeslotDocs =
-    await timeslotsCol.orderBy("startTime", "desc").get();
-
-  timeslotDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resTimeslots.push({ id: doc.id, ...doc.data() });
-  });
-  
-  return res.status(200).json(resTimeslots);
-});
-
 // -----------------------------
 // GET ALL TIMESLOTS FOR PERIOD
 // -----------------------------
@@ -64,19 +32,16 @@ timeslotRoute.get("/timeslots/period/:periodid", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   const periodId:     string           = req.params.periodid;
   const resTimeslots: Array<Timeslot>  = [];
-  const timeslotDocs =
-    await timeslotsCol.where("period", "==", periodId).orderBy("startTime", "desc").get();
+  const timeslotDocs = await timeslotsCol.where("period", "==", periodId).get();
 
-  timeslotDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resTimeslots.push({ id: doc.id, ...doc.data() });
-  });
+  timeslotDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resTimeslots.push({ id: doc.id, ...doc.data() }); });
 
   return res.status(200).json(resTimeslots);
 });
 
-// -------------------------------------
-// GET ALL OPEN (AND CURRENT) TIMESLOTS 
-// -------------------------------------
+// --------------------------------------
+// GET open Timeslots (i.e. open periods) 
+// --------------------------------------
 timeslotRoute.get("/timeslots/open", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
@@ -84,49 +49,8 @@ timeslotRoute.get("/timeslots/open", async (req, res) => {
 
   for await (const period of periodDocs.docs) {
     functions.logger.log("GET /timeslots/open - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
-
-    const timeslotDocs = await timeslotsCol
-      .where("period", "==", period.id)
-      .where("date",   ">=", (new Date()).toLocaleDateString("sv-SE"))
-      .orderBy("date").get();
-
-    for await (const timeslot of timeslotDocs.docs) {
-      resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
-    }
-  }
-
-  return res.status(200).json(resTimeslots);
-});
-
-// ----------------------------------------------
-// GET OPEN (AND CURRENT) TIMESLOTS, UP TO X DAYS
-// ----------------------------------------------
-timeslotRoute.get("/timeslots/open/:days", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const days: number = parseInt(req.params.days);
-  const today = new Date();
-  const maxday = new Date();
-  maxday.setDate(maxday.getDate() + days);
-
-  if (isNaN(days) || days < 0) {
-    return res.status(400).send("Incorrect parameter (days) - " + req.params.days);
-  }
-
-  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
-  const resTimeslots:   Array<Timeslot> = [];
-
-  for await (const period of periodDocs.docs) {
-    functions.logger.log("GET /timeslots/open/" + days + " - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
-
-    const timeslotDocs = await timeslotsCol
-      .where("period", "==", period.id)
-      .where("date",   ">=", today.toLocaleDateString("sv-SE"))
-      .where("date",   "<=", maxday.toLocaleDateString("sv-SE")) // UP TO X DAYS
-      .orderBy("date").get();
-
-    for await (const timeslot of timeslotDocs.docs) {
-      resTimeslots.push({ id: timeslot.id, ...timeslot.data() });
-    }
+    const timeslotDocs = await timeslotsCol.where("period", "==", period.id).get();
+    for await (const timeslot of timeslotDocs.docs) { resTimeslots.push({ id: timeslot.id, ...timeslot.data() }); }
   }
 
   return res.status(200).json(resTimeslots);

@@ -25,33 +25,6 @@ export async function getActivity(activityid: string) {
   return activity;
 }
 
-// -------------
-// GET ACTIVITY
-// -------------
-activityRoute.get("/activity/:activityid", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const docId: string = req.params.activityid;
-  const activityDoc = await activitiesCol.doc(docId).get();
-  if (activityDoc.exists) {
-    const activityData: ActivityData = activityDoc.data()!;
-    return res.status(200).json({ id: docId, ...activityData });
-  }
-  return res.status(200).json({ });
-});
-
-// ------------------
-// GET ALL ACTIVITIES
-// ------------------
-activityRoute.get("/activities", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const resActivities: Array<Activity>  = [];
-  const activityDocs = await activitiesCol.get();
-
-  activityDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivities.push({ id: doc.id, ...doc.data() }); });
-
-  return res.status(200).json(resActivities);
-});
-
 // -----------------------------
 // GET ALL ACTIVITIES FOR PERIOD
 // -----------------------------
@@ -66,9 +39,9 @@ activityRoute.get("/activities/period/:periodid", async (req, res) => {
   return res.status(200).json(resActivities);
 });
 
-// -------------------------------------
-// GET ALL OPEN (AND CURRENT) ACTIVITIES 
-// -------------------------------------
+// ---------------------------------------
+// GET open Activities (i.e. open periods) 
+// ---------------------------------------
 activityRoute.get("/activities/open", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
@@ -76,9 +49,7 @@ activityRoute.get("/activities/open", async (req, res) => {
 
   for await (const period of periodDocs.docs) {
     functions.logger.log("GET /activities/open - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
-    const activityDocs = await activitiesCol
-      .where("period", "==", period.id)
-      .where("date",   ">=", (new Date()).toLocaleDateString("sv-SE")).get();
+    const activityDocs = await activitiesCol.where("period", "==", period.id).get();
     for await (const activity of activityDocs.docs) { resActivities.push({ id: activity.id, ...activity.data() }); }
   }
 

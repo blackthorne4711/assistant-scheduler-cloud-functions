@@ -115,95 +115,57 @@ export async function processActivityBookingRemoval(ActivityBooking: ActivityBoo
   }
 }
 
-// ----------------------------------------
-// GET ActivityBooking (only Admin/Trainer)
-// ----------------------------------------
-activityBookingRoute.get("/activitybooking/:ActivityBookingid", async (req, res) => {
+// ---------------------------------------------------------------------------------
+// GET user ActivityBookings (i.e. for assistants for user and current/future dates)
+// ---------------------------------------------------------------------------------
+activityBookingRoute.get("/activitybookings/user", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
-
-  // Authz validation
-  const userid = getUserid(req);
-  const isAdmin:   boolean = await isUseridAdmin(userid);
-  const isTrainer: boolean = await isUseridTrainer(userid);
-  if (!isAdmin && !isTrainer) {
-    functions.logger.error("GET /activitybooking/:ActivityBookingid - not allowed - " + userid);
-    return res.status(403).json("Not allowed for non-(admin/trainer)");
-  }
-
-  const docId: string = req.params.ActivityBookingid;
-  const ActivityBookingDoc = await activitybookingsCol.doc(docId).get();
-  if (ActivityBookingDoc.exists) {
-    const ActivityBookingData: ActivityBookingData = ActivityBookingDoc.data()!;
-    return res.status(200).json({ id: docId, ...ActivityBookingData });
-  }
-  return res.status(200).json({ });
-});
-
-// ---------------------------------------------
-// GET ALL ActivityBookings (only Admin/Trainer)
-// ---------------------------------------------
-activityBookingRoute.get("/activitybookings", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-
-  // Authz validation (only Admin/Trainer)
-  const userid = getUserid(req);
-  const isAdmin:   boolean = await isUseridAdmin(userid);
-  const isTrainer: boolean = await isUseridTrainer(userid);
-  if (!isAdmin && !isTrainer) {
-    functions.logger.error("GET /activitybookings - not allowed - " + userid);
-    return res.status(403).json("Not allowed for non-(admin/trainer)");
-  }
-
+  const userid     = getUserid(req);
+  const assistants = await getAssistantsForUser(userid);
+  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
   const resActivityBookings: Array<ActivityBooking>  = [];
-  const ActivityBookingDocs = await activitybookingsCol.orderBy("activity").orderBy("assistant").get();
-  ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
+
+  for await (const period of periodDocs.docs) {
+    for (let i = 0; i < assistants.length; i++) {
+      functions.logger.log("GET /activitybookings/user - assistant - " + assistants[i]);
+      const ActivityBookingDocs =
+        await activitybookingsCol
+          .where("activityPeriod", "==", period.id)
+          .where("assistant", "==", assistants[i]).get();
+      ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+        //functions.logger.log("GET /activitybookings/user - activitybooking - " + doc.id);
+        resActivityBookings.push({ id: doc.id, ...doc.data() });
+      });
+    }
+  }
 
   return res.status(200).json(resActivityBookings);
 });
 
-// -----------------------------------------------------------------------
-// GET ALL UPCOMING ActivityBookings (current and future ActivityBookings)
-// -----------------------------------------------------------------------
-// activityBookingRoute.get("/activitybookings/upcoming", async (req, res) => {
-//   res.header("Access-Control-Allow-Origin", "*");
-//   // ALLOWED FOR ALL
-//   // const userid = getUserid(req);
-//   // const isAdmin:   boolean = await isUseridAdmin(userid);
-//   // const isTrainer: boolean = await isUseridTrainer(userid);
-//   // if (!isAdmin && !isTrainer) {
-//   //   functions.logger.error("GET /activitybookings/upcoming - not allowed - " + userid);
-//   //   res.header("Access-Control-Allow-Origin", "*");
-//   //   return res.status(403).json("Not allowed for non-(admin/trainer)");
-//   // }
-//   const resActivityBookings: Array<ActivityBooking>  = [];
-//   const ActivityBookingDocs = await activitybookingsCol.where("activityDate", ">=", (new Date()).toLocaleDateString("sv-SE")).get();
-//   ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-//     resActivityBookings.push({ id: doc.id, ...doc.data() });
-//   });
-//   return res.status(200).json(resActivityBookings);
-// });
-
-// ------------------------------------------------------------------------------
-// GET ALL USER ActivityBookings (i.e. for assistants for user and current dates)
-// ------------------------------------------------------------------------------
-activityBookingRoute.get("/activitybookings/user", async (req, res) => {
+// ---------------------------------------------
+// GET open ActivityBookings (i.e. open periods) 
+// ---------------------------------------------
+activityBookingRoute.get("/activitybookings/open", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
+  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
+  const resActivityBookings: Array<ActivityBooking> = [];
 
-  const userid     = getUserid(req);
-  const assistants = await getAssistantsForUser(userid);
-  const resActivityBookings: Array<ActivityBooking>  = [];
-  for (let i = 0; i < assistants.length; i++) {
-    functions.logger.log("GET /activitybookings/user - assistant - " + assistants[i]);
-    const ActivityBookingDocs =
-      await activitybookingsCol.where("activityDate", ">=", (new Date()).toLocaleDateString("sv-SE")).where("assistant", "==", assistants[i]).get();
-    ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
+  for await (const period of periodDocs.docs) {
+    functions.logger.log("GET /ActivityBookings/open - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
+
+    const ActivityBookingDocs = await activitybookingsCol
+      .where("activityPeriod", "==", period.id).get();
+
+    for await (const ActivityBooking of ActivityBookingDocs.docs) {
+      resActivityBookings.push({ id: ActivityBooking.id, ...ActivityBooking.data() });
+    }
   }
-
+  
   return res.status(200).json(resActivityBookings);
 });
 
 // --------------------------------------------------------
-// GET ALL ActivityBookings FOR PERIOD (only Admin/Trainer)
+// GET all ActivityBookings for period (only Admin/Trainer)
 // --------------------------------------------------------
 activityBookingRoute.get("/activitybookings/period/:periodid", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -213,7 +175,7 @@ activityBookingRoute.get("/activitybookings/period/:periodid", async (req, res) 
   const isAdmin:   boolean = await isUseridAdmin(userid);
   const isTrainer: boolean = await isUseridTrainer(userid);
   if (!isAdmin && !isTrainer) {
-    functions.logger.error("GET /activitybookings - not allowed - " + userid);
+    functions.logger.error("GET /activitybookings/period/:periodid - not allowed - " + userid);
     return res.status(403).json("Not allowed for non-(admin/trainer)");
   }
 
@@ -223,43 +185,6 @@ activityBookingRoute.get("/activitybookings/period/:periodid", async (req, res) 
     await activitybookingsCol.where("activityPeriod", "==", periodId).get();
   ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
 
-  return res.status(200).json(resActivityBookings);
-});
-
-// -------------------------------------
-// GET ALL ActivityBookings FOR ACTIVITY
-// -------------------------------------
-// activityBookingRoute.get("/activitybookings/activity/:activityid", async (req, res) => {
-//   res.header("Access-Control-Allow-Origin", "*");
-
-//   const activityId: string = req.params.activityid;
-//   const resActivityBookings: Array<ActivityBooking>  = [];
-//   const ActivityBookingDocs =
-//     await activitybookingsCol.where("activity", "==", activityId).orderBy("activity").orderBy("assistant").get();
-//   ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => { resActivityBookings.push({ id: doc.id, ...doc.data() }); });
-
-//   return res.status(200).json(resActivityBookings);
-// });
-
-// -------------------------------------------
-// GET ALL OPEN (AND CURRENT) ActivityBookings
-// -------------------------------------------
-activityBookingRoute.get("/activitybookings/open", async (req, res) => {
-  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
-  const resActivityBookings: Array<ActivityBooking> = [];
-
-  for await (const period of periodDocs.docs) {
-    functions.logger.log("GET /ActivityBookings/open - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
-
-    const ActivityBookingDocs = await activitybookingsCol
-      .where("activityPeriod", "==", period.id)
-      .where("activityDate",   ">=", (new Date()).toLocaleDateString("sv-SE")).get();
-
-    for await (const ActivityBooking of ActivityBookingDocs.docs) {
-      resActivityBookings.push({ id: ActivityBooking.id, ...ActivityBooking.data() });
-    }
-  }
-  res.header("Access-Control-Allow-Origin", "*");
   return res.status(200).json(resActivityBookings);
 });
 

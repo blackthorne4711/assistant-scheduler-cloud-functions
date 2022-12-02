@@ -85,127 +85,36 @@ export async function processBookingRemoval(booking: Booking) {
   }
 }
 
-// -------------
-// GET BOOKING
-// -------------
-bookingRoute.get("/booking/:bookingid", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const docId: string = req.params.bookingid;
-  const bookingDoc = await bookingsCol.doc(docId).get();
-  if (bookingDoc.exists) {
-    const bookingData: BookingData = bookingDoc.data()!;
-    return res.status(200).json({ id: docId, ...bookingData });
-  }
-
-  return res.status(200).json({ });
-});
-
-// res.set('Access-Control-Allow-Origin', '*');
-
-// ------------------
-// GET ALL BOOKINGS
-// ------------------
-bookingRoute.get("/bookings", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const resBookings: Array<Booking>  = [];
-
-  const bookingDocs =
-    await bookingsCol.orderBy("timeslot").orderBy("assistant").get();
-
-  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resBookings.push({ id: doc.id, ...doc.data() });
-  });
-  
-  return res.status(200).json(resBookings);
-});
-
-// ---------------------------------------------------------------------
-// GET ALL UPCOMING BOOKINGS (current and future bookings)
-// ---------------------------------------------------------------------
-bookingRoute.get("/bookings/upcoming", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const userid = getUserid(req);
-
-  // CHECK IF ADMIN
-  const isAdmin: boolean = await isUseridAdmin(userid);
-  const isTrainer: boolean = await isUseridTrainer(userid);
-
-  if (!isAdmin && !isTrainer) {
-    functions.logger.error("GET /bookings/upcoming - not allowed - " + userid);
-    return res.status(403).json("Not allowed for non-(admin/trainer)");
-  }
-
-  const resBookings: Array<Booking>  = [];
-  const bookingDocs = await bookingsCol.where("timeslotDate", ">=", (new Date()).toLocaleDateString("sv-SE")).get();
-  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resBookings.push({ id: doc.id, ...doc.data() });
-  });
-  
-  return res.status(200).json(resBookings);
-});
-
-// ---------------------------------------------------------------------
-// GET ALL USER BOOKINGS (i.e. for assistants for user and current dates)
-// ---------------------------------------------------------------------
+// -----------------------------------------------------------------
+// GET user Bookings (i.e. open periods and for assistants for user)
+// -----------------------------------------------------------------
 bookingRoute.get("/bookings/user", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
   const userid     = getUserid(req);
   const assistants = await getAssistantsForUser(userid);
-
+  const periodDocs = await periodsCol.where("status", "==", "OPEN").orderBy("from").get();
   const resBookings: Array<Booking>  = [];
 
-  // Loop through users assistants
-  for (let i = 0; i < assistants.length; i++) {
-    functions.logger.log("GET /bookings/user - assistant - " + assistants[i]);
-    const bookingDocs =
-      await bookingsCol.where("timeslotDate", ">=", (new Date()).toLocaleDateString("sv-SE")).where("assistant", "==", assistants[i]).get();
+  for await (const period of periodDocs.docs) {
+    // Loop through users assistants
+    for (let i = 0; i < assistants.length; i++) {
+      functions.logger.log("GET /bookings/user - period (" + period.id + ") - assistant (" + assistants[i] + ")");
+      const bookingDocs = await bookingsCol
+        .where("timeslotPeriod", "==", period.id)
+        .where("assistant",      "==", assistants[i]).get();
 
-    bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-      functions.logger.log("GET /bookings/user - booking - " + assistants[i]);
-      resBookings.push({ id: doc.id, ...doc.data() });
-    });
+      bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+        //functions.logger.log("GET /bookings/user - booking - " + doc.id);
+        resBookings.push({ id: doc.id, ...doc.data() });
+      });
+    }
   }
-  
-  return res.status(200).json(resBookings);
-});
-
-// -----------------------------
-// GET ALL BOOKINGS FOR PERIOD
-// -----------------------------
-bookingRoute.get("/bookings/period/:periodid", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const periodId:     string           = req.params.periodid;
-  const resBookings: Array<Booking>  = [];
-  const bookingDocs =
-    await bookingsCol.where("timeslotPeriod", "==", periodId).get();
-
-  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resBookings.push({ id: doc.id, ...doc.data() });
-  });
-
-  return res.status(200).json(resBookings);
-});
-
-// ------------------------------
-// GET ALL BOOKINGS FOR TIMESLOT
-// ------------------------------
-bookingRoute.get("/bookings/timeslot/:timeslotid", async (req, res) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  const timeslotId: string = req.params.timeslotid;
-  const resBookings: Array<Booking>  = [];
-
-  const bookingDocs =
-    await bookingsCol.where("timeslot", "==", timeslotId).orderBy("timeslot").orderBy("assistant").get();
-
-  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-    resBookings.push({ id: doc.id, ...doc.data() });
-  });
   
   return res.status(200).json(resBookings);
 });
 
 // -------------------------------------
-// GET ALL OPEN (AND CURRENT) BOOKINGS 
+// GET open Bookings (i.e. open periods) 
 // -------------------------------------
 bookingRoute.get("/bookings/open", async (req, res) => {
   res.header("Access-Control-Allow-Origin", "*");
@@ -213,11 +122,10 @@ bookingRoute.get("/bookings/open", async (req, res) => {
   const resBookings:   Array<Booking> = [];
 
   for await (const period of periodDocs.docs) {
-    functions.logger.log("GET /bookings/open - " + period.id + " (" + (new Date()).toLocaleDateString("sv-SE") + ")");
+    functions.logger.log("GET /bookings/open - " + period.id);
 
     const bookingDocs = await bookingsCol
-      .where("timeslotPeriod", "==", period.id)
-      .where("timeslotDate",   ">=", (new Date()).toLocaleDateString("sv-SE")).get();
+      .where("timeslotPeriod", "==", period.id).get();
 
     for await (const booking of bookingDocs.docs) {
       resBookings.push({ id: booking.id, ...booking.data() });
@@ -227,6 +135,31 @@ bookingRoute.get("/bookings/open", async (req, res) => {
   return res.status(200).json(resBookings);
 });
 
+// ------------------------------------------------
+// GET all Bookings for period (only Admin/Trainer)
+// ------------------------------------------------
+bookingRoute.get("/bookings/period/:periodid", async (req, res) => {
+  res.header("Access-Control-Allow-Origin", "*");
+
+  // Authz validation (only Admin/Trainer)
+  const userid = getUserid(req);
+  const isAdmin:   boolean = await isUseridAdmin(userid);
+  const isTrainer: boolean = await isUseridTrainer(userid);
+  if (!isAdmin && !isTrainer) {
+    functions.logger.error("GET /bookings/period/:periodid - not allowed - " + userid);
+    return res.status(403).json("Not allowed for non-(admin/trainer)");
+  }
+
+  const periodId:     string           = req.params.periodid;
+  const resBookings: Array<Booking>  = [];
+  const bookingDocs = await bookingsCol.where("timeslotPeriod", "==", periodId).get();
+
+  bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
+    resBookings.push({ id: doc.id, ...doc.data() });
+  });
+
+  return res.status(200).json(resBookings);
+});
 
 // -------------
 // POST BOOKING
