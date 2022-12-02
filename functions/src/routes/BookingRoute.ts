@@ -104,7 +104,6 @@ bookingRoute.get("/bookings/user", async (req, res) => {
         .where("assistant",      "==", assistants[i]).get();
 
       bookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-        //functions.logger.log("GET /bookings/user - booking - " + doc.id);
         resBookings.push({ id: doc.id, ...doc.data() });
       });
     }

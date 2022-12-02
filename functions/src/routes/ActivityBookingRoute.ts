@@ -133,7 +133,6 @@ activityBookingRoute.get("/activitybookings/user", async (req, res) => {
           .where("activityPeriod", "==", period.id)
           .where("assistant", "==", assistants[i]).get();
       ActivityBookingDocs.forEach((doc: FirebaseFirestore.DocumentData) => {
-        //functions.logger.log("GET /activitybookings/user - activitybooking - " + doc.id);
         resActivityBookings.push({ id: doc.id, ...doc.data() });
       });
     }
